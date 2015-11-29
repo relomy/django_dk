@@ -77,8 +77,8 @@ class GameStats(models.Model):
     pts: Points
     plus_minus: Plus/minus
     """
-    game_id = models.ForeignKey(Game, related_name='game_stats')
-    player_id = models.ForeignKey(Player, related_name='game_stats')
+    game = models.ForeignKey(Game, related_name='game_stats')
+    player = models.ForeignKey(Player, related_name='game_stats')
     min = models.PositiveIntegerField(null=True, blank=True)
     fgm = models.PositiveIntegerField(null=True, blank=True)
     fga = models.PositiveIntegerField(null=True, blank=True)
@@ -95,7 +95,7 @@ class GameStats(models.Model):
     tov = models.PositiveIntegerField(null=True, blank=True)
     pf = models.PositiveIntegerField(null=True, blank=True)
     pts = models.PositiveIntegerField(null=True, blank=True)
-    plus_minus = models.PositiveIntegerField(null=True, blank=True)
+    plus_minus = models.IntegerField(null=True, blank=True)
 
     @property
     def fg_pct(self):
