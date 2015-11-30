@@ -2,6 +2,7 @@ import nba.parsers.players as player_parser
 import nba.parsers.games as game_parser
 import nba.parsers.injuries as injury_parser
 import nba.parsers.dkresults as dkresults_parser
+from nba.utils import get_contest_ids
 from django.core.management.base import BaseCommand, CommandError
 
 class Command(BaseCommand):
@@ -20,10 +21,11 @@ $ python manage.py fetch
             help='Fetch player data from NBA.com'
         )
         parser.add_argument('--games', '-g',
-            action='store_true',
+            action='store',
             dest='games',
             default=False,
-            help='Fetch game data from NBA.com'
+            help=('Fetch game data from NBA.com for a season'
+                  ' (curr for current season)')
         )
         parser.add_argument('--injuries', '-i',
             action='store_true',
@@ -38,16 +40,33 @@ $ python manage.py fetch
             default=False,
             help='Fetch contest result data from draftkings.com'
         )
+        parser.add_argument('--update', '-u',
+            action='store_true',
+            dest='update',
+            default=False,
+            help='Update game, injury, and contest result data'
+        )
 
     def handle(self, *args, **options):
-        if options['players']:
-            player_parser.run()
-        if options['games']:
-            game_parser.run()
-        if options['injuries']:
+        if options['update']:
+            game_parser.run('2015-16')
             injury_parser.run()
-        if options['dk_results']:
             dkresults_parser.run(
-                contest_ids=options['dk_results'],
-                contest=True, resultscsv=False, resultsparse=True
+                contest_ids=get_contest_ids(limit=2),
+                contest=True, resultscsv=True, resultsparse=True
             )
+        else:
+            if options['players']:
+                player_parser.run()
+            if options['games']:
+                if options['games'] == 'curr':
+                    game_parser.run('2015-16')
+                else:
+                    game_parser.run(options['games'])
+            if options['injuries']:
+                injury_parser.run()
+            if options['dk_results']:
+                dkresults_parser.run(
+                    contest_ids=options['dk_results'],
+                    contest=True, resultscsv=True, resultsparse=True
+                )

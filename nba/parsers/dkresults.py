@@ -16,12 +16,6 @@ def run(contest_ids=[], contest=True, resultscsv=True, resultsparse=True):
     """
     CSVPATH = 'nba/data/results'
 
-    def get_contest_urls(results_recent=False):
-        with open('README.md') as f:
-            text = ''.join([line for line in f])
-        urls = re.findall(r'https://www.draftkings.com/[^ ]*', text)
-        return urls[-2:] if results_recent else urls[-4:-2]
-
     def get_contest_data(contest_id):
         def dollars_to_decimal(dollarstr):
             return decimal.Decimal(dollarstr.replace('$', '').replace(',', ''))
@@ -79,9 +73,13 @@ def run(contest_ids=[], contest=True, resultscsv=True, resultsparse=True):
                 z = zipfile.ZipFile(f)
                 for name in z.namelist():
                     z.extract(name, CSVPATH)
-        export_url = url.replace('gamecenter', 'exportfullstandingscsv')
-        read_response(requests.get(export_url, headers=HEADERS))
-        unzip_data()
+
+        try:
+            export_url = url.replace('gamecenter', 'exportfullstandingscsv')
+            read_response(requests.get(export_url, headers=HEADERS))
+            unzip_data()
+        except zipfile.BadZipfile:
+            print 'Couldn\'t download/extract CSV zip for %s' % contest_id
 
     def parse_contest_result_csv(contest_id):
         def parse_entry_name(entry_name):

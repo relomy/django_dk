@@ -74,7 +74,10 @@ class Player(models.Model):
             return ((int_first in arg_first or arg_first in int_first)
                     and (int_last in arg_last or arg_last in int_last))
 
-        name = unicode(name, encoding='utf-8')
+        try:
+            name = unicode(name, encoding='utf-8')
+        except TypeError:
+            pass
         # Order matters. name_in_dict should catch UnicodeDecodeErrors
         players = [p for p in cls.objects.all()
                    if name_in_dict(p.full_name, name)
@@ -225,7 +228,7 @@ class DKContest(models.Model):
     entries = models.PositiveIntegerField(null=True, blank=True)
     positions_paid = models.PositiveIntegerField(null=True, blank=True)
 
-    def __unicode__():
+    def __unicode__(self):
         return '%s %s' % (self.name, self.date)
 
 class DKResult(models.Model):
@@ -253,5 +256,5 @@ class DKResult(models.Model):
             'C': self.c, 'G': self.g, 'F': self.f, 'UTIL': self.util
         }
 
-    def __unicode__():
-        return '%s %s' % (unicode(contest), unicode(rank))
+    def __unicode__(self):
+        return '%s %s' % (unicode(self.contest), unicode(self.rank))

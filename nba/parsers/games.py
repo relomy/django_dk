@@ -2,9 +2,9 @@ import datetime
 import requests
 from nba.models import Team, Player, Game, GameStats
 
-def run():
+def run(season='2015-16'):
 
-    def parse_games(player_id, season='2015-16'):
+    def parse_games(player_id, season):
         """
         Format: {
             "resource": "playergamelog",
@@ -121,4 +121,4 @@ def run():
     # TODO: Filter for active players
     player_ids = [p.nba_id for p in Player.objects.all()]
     for player_id in player_ids:
-        parse_games(player_id)
+        parse_games(player_id, season)
