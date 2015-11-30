@@ -1,5 +1,6 @@
 import nba.parsers.players as player_parser
 import nba.parsers.games as game_parser
+import nba.parsers.injuries as injury_parser
 from django.core.management.base import BaseCommand, CommandError
 
 class Command(BaseCommand):
@@ -23,9 +24,17 @@ $ python manage.py fetch
             default=False,
             help='Fetch game data from NBA.com'
         )
+        parser.add_argument('--injuries', '-i',
+            action='store_true',
+            dest='injuries',
+            default=False,
+            help='Fetch injury data from ESPN.com'
+        )
 
     def handle(self, *args, **options):
         if options['players']:
             player_parser.run()
         if options['games']:
             game_parser.run()
+        if options['injuries']:
+            injury_parser.run()

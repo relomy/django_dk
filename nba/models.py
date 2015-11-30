@@ -43,6 +43,20 @@ class Player(models.Model):
     def full_name(self):
         return ' '.join([n for n in [self.first_name, self.last_name] if n])
 
+    @classmethod
+    def filter_by_name(cls, name):
+        return [p for p in cls.objects.all() if p.full_name == name]
+
+    @classmethod
+    def get_by_name(cls, name):
+        players = [p for p in cls.objects.all() if p.full_name == name]
+        if len(players) == 1:
+            return players[0]
+        elif len(players) == 0:
+            raise Player.DoesNotExist
+        else:
+            raise Player.MultipleObjectsReturned
+
     def __unicode__(self):
         return self.full_name
 
@@ -59,6 +73,9 @@ class Game(models.Model):
     season = models.CharField(max_length=9, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ('home_team', 'away_team', 'date')
 
     def __unicode__(self):
         return ('%s @ %s %s'
@@ -109,6 +126,21 @@ class GameStats(models.Model):
     def ft_pct(self):
         return float(self.ftm) / self.fta
 
+    class Meta:
+        unique_together = ('game', 'player')
+
     def __unicode__(self):
         return ('%s %s' % (unicode(self.player), unicode(self.game)))
+
+class Injury(models.Model):
+    player = models.ForeignKey(Player, related_name='injuries')
+    status = models.CharField(max_length=50)
+    date = models.DateField()
+    comment = models.CharField(max_length=500, null=True, blank=True)
+
+    class Meta:
+        unique_together = ('player', 'date', 'comment')
+
+    def __unicode__(self):
+        return '%s %s %s' % (unicode(self.player), self.status, self.date)
 
