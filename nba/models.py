@@ -1,4 +1,5 @@
 from django.db import models
+from nba.utils import DK_NBA_PLAYER_NAME_MAP
 
 # Create your models here.
 
@@ -44,18 +45,63 @@ class Player(models.Model):
         return ' '.join([n for n in [self.first_name, self.last_name] if n])
 
     @classmethod
+    def __get_first_last_name(cls, name):
+        stripped = name.replace('.', '').split(' ')
+        first_name = stripped[0]
+        last_name = ' '.join(stripped[1:])
+        return (first_name, last_name)
+
+    @classmethod
     def filter_by_name(cls, name):
         return [p for p in cls.objects.all() if p.full_name == name]
 
     @classmethod
-    def get_by_name(cls, name):
-        players = [p for p in cls.objects.all() if p.full_name == name]
+    def get_by_name_slow(cls, name):
+        def name_in_dict(int_name, arg_name):
+            return (arg_name in DK_NBA_PLAYER_NAME_MAP
+                    and int_name == DK_NBA_PLAYER_NAME_MAP[arg_name])
+
+        def name_equals(int_name, arg_name):
+            int_new = int_name.replace('.', '').lower().strip()
+            arg_new = arg_name.replace('.', '').lower().strip()
+            return (int_new == arg_new
+                    or int_new in arg_new
+                    or arg_new in int_new)
+
+        def name_contains(int_name, arg_name):
+            int_first, int_last = cls.__get_first_last_name(int_name)
+            arg_first, arg_last = cls.__get_first_last_name(arg_name)
+            return ((int_first in arg_first or arg_first in int_first)
+                    and (int_last in arg_last or arg_last in int_last))
+
+        name = unicode(name, encoding='utf-8')
+        # Order matters. name_in_dict should catch UnicodeDecodeErrors
+        players = [p for p in cls.objects.all()
+                   if name_in_dict(p.full_name, name)
+                   or name_equals(p.full_name, name)
+                   or name_contains(p.full_name, name)]
         if len(players) == 1:
             return players[0]
         elif len(players) == 0:
-            raise Player.DoesNotExist
+            print 'Player %s does not exist' % name
+            raise cls.DoesNotExist
         else:
-            raise Player.MultipleObjectsReturned
+            print ('Multiple players named %s found (%s)'
+                   % (name, ', '.join(players)))
+            raise cls.MultipleObjectsReturned
+
+    @classmethod
+    def get_by_name(cls, name):
+        first_name, last_name = cls.__get_first_last_name(name)
+        try:
+            return cls.objects.get(first_name__iexact=first_name,
+                                   last_name__iexact=last_name)
+        except cls.DoesNotExist, cls.MultipleObjectsReturned:
+            try:
+                return cls.objects.get(first_name__contains=first_name,
+                                       last_name__contains=last_name)
+            except cls.DoesNotExist, cls.MultipleObjectsReturned:
+                return cls.get_by_name_slow(name)
 
     def __unicode__(self):
         return self.full_name
@@ -126,6 +172,32 @@ class GameStats(models.Model):
     def ft_pct(self):
         return float(self.ftm) / self.fta
 
+    @property
+    def dk_points(self):
+        """
+        Point = +1 PT
+        Made 3pt. shot = +0.5 PTs
+        Rebound = +1.25 PTs
+        Assist = +1.5 PTs
+        Steal = +2 PTs
+        Block = +2 PTs
+        Turnover = -0.5 PTs
+        Double-Double = +1.5PTs
+            (MAX 1 PER PLAYER: Points, Rebounds, Assists, Blocks, Steals)
+        Triple-Double = +3PTs
+            (MAX 1 PER PLAYER: Points, Rebounds, Assists, Blocks, Steals)
+        """
+        doubles = [
+            x for x in [self.pts, self.reb, self.ast, self.blk, self.stl]
+            if x >= 10
+        ]
+        points = (1.0 * self.pts + 0.5 * self.fg3m + 1.25 * self.reb
+                  + 1.5 * self.ast + 2.0 * self.stl + 2.0 * self.blk
+                  + -0.5 * self.tov)
+        points += 1.5 if len(doubles) >= 2 else 0.0
+        points += 3.0 if len(doubles) >= 3 else 0.0
+        return points
+
     class Meta:
         unique_together = ('game', 'player')
 
@@ -144,3 +216,42 @@ class Injury(models.Model):
     def __unicode__(self):
         return '%s %s %s' % (unicode(self.player), self.status, self.date)
 
+class DKContest(models.Model):
+    dk_id = models.CharField(max_length=15, unique=True)
+    date = models.DateField(null=True, blank=True)
+    name = models.CharField(max_length=100, null=True, blank=True)
+    total_prizes = models.DecimalField(max_digits=18, decimal_places=2,
+                                       null=True, blank=True)
+    entries = models.PositiveIntegerField(null=True, blank=True)
+    positions_paid = models.PositiveIntegerField(null=True, blank=True)
+
+    def __unicode__():
+        return '%s %s' % (self.name, self.date)
+
+class DKResult(models.Model):
+    contest = models.ForeignKey(DKContest, related_name='results')
+    dk_id = models.CharField(max_length=15, unique=True)
+    name = models.CharField(max_length=50)
+    rank = models.PositiveIntegerField()
+    points = models.FloatField()
+    pg = models.ForeignKey(Player, related_name='dk_pg_results')
+    sg = models.ForeignKey(Player, related_name='dk_sg_results')
+    sf = models.ForeignKey(Player, related_name='dk_sf_results')
+    pf = models.ForeignKey(Player, related_name='dk_pf_results')
+    c = models.ForeignKey(Player, related_name='dk_c_results')
+    g = models.ForeignKey(Player, related_name='dk_g_results')
+    f = models.ForeignKey(Player, related_name='dk_f_results')
+    util = models.ForeignKey(Player, related_name='dk_util_results')
+
+    def get_lineup(self):
+        return [self.pg, self.sg, self.sf, self.pf, self.c, self.g, self.f,
+                self.util]
+
+    def get_lineup_dict(self):
+        return {
+            'PG': self.pg, 'SG': self.sg, 'SF': self.sf, 'PF': self.pf,
+            'C': self.c, 'G': self.g, 'F': self.f, 'UTIL': self.util
+        }
+
+    def __unicode__():
+        return '%s %s' % (unicode(contest), unicode(rank))

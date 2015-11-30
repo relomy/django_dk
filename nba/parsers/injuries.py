@@ -1,35 +1,12 @@
-from bs4 import BeautifulSoup
 import csv
-import datetime
+from bs4 import BeautifulSoup
 import requests
 from nba.models import Player, Injury
-
-MONTHS = {
-    'Jan': 1, 'Feb': 2, 'Mar': 3, 'Apr': 4, 'May': 5, 'Jun': 6, 'Jul': 7,
-    'Aug': 8, 'Sep': 9, 'Oct': 10, 'Nov': 11, 'Dec': 12
-}
-
-TODAY = datetime.date.today()
+from nba.utils import get_date_yearless
 
 URL = 'http://espn.go.com/nba/injuries'
 
 def run():
-
-    def get_date(datestr):
-        """
-        Return a date from a datestring. Make sure that it wraps around to the
-        previous year if the datestring is greater than the current date (e.g.
-        data for Dec 31 when 'today' is Jan 1).
-        @param datestr [str]: [Month] [Date] (e.g. 'Nov 11')
-        @return [datetime.date]
-        """
-        month, day = datestr.split(' ')
-        month = MONTHS[month]
-        year = TODAY.year
-        date = datetime.date(year, month, int(day))
-        return (date if date <= TODAY
-                else datetime.date(year-1, month, int(day)))
-
     response = requests.get(URL)
     soup = BeautifulSoup(response.text, 'html5lib')
     rows = []
@@ -54,7 +31,7 @@ def run():
         if len(row) == 3:
             name, status, datestr = [r.string for r in row]
             if name != 'NAME' and status != 'STATUS' and datestr != 'DATE':
-                date = get_date(datestr)
+                date = get_date_yearless(datestr)
                 try:
                     player = Player.get_by_name(name)
                 except Player.DoesNotExist:

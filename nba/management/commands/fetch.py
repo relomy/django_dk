@@ -1,6 +1,7 @@
 import nba.parsers.players as player_parser
 import nba.parsers.games as game_parser
 import nba.parsers.injuries as injury_parser
+import nba.parsers.dkresults as dkresults_parser
 from django.core.management.base import BaseCommand, CommandError
 
 class Command(BaseCommand):
@@ -30,6 +31,13 @@ $ python manage.py fetch
             default=False,
             help='Fetch injury data from ESPN.com'
         )
+        parser.add_argument('--dk-results', '-r',
+            action='store',
+            nargs='+',
+            dest='dk_results',
+            default=False,
+            help='Fetch contest result data from draftkings.com'
+        )
 
     def handle(self, *args, **options):
         if options['players']:
@@ -38,3 +46,8 @@ $ python manage.py fetch
             game_parser.run()
         if options['injuries']:
             injury_parser.run()
+        if options['dk_results']:
+            dkresults_parser.run(
+                contest_ids=options['dk_results'],
+                contest=True, resultscsv=False, resultsparse=True
+            )
