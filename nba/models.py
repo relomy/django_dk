@@ -106,6 +106,32 @@ class Player(models.Model):
             except cls.DoesNotExist, cls.MultipleObjectsReturned:
                 return cls.get_by_name_slow(name)
 
+    def get_stat(self, date, stat):
+        """
+        @param date [datetime.date]: Date to query
+        @param stats [str]: Stat name to query
+        @return [int/float]: Stat value
+        """
+        try:
+            gs = GameStats.objects.get(game__date=date, player=self)
+            return getattr(gs, stat)
+        except GameStats.DoesNotExist:
+            return 0.0
+
+    def get_stats(self, date, *stats):
+        """
+        @param date [datetime.date]: Date to query
+        @param *stats [tuple]: List of stat names
+        @return [dict]: { [stat name]: [stat value] }
+        e.g. player_obj.get_stats(datetime.date(2015, 1, 1), 'min', 'pts')
+        >> { 'min': 34, 'pts': 18 }
+        """
+        try:
+            gs = GameStats.objects.get(game__date=date, player=self)
+            return { stat: getattr(gs, stat) for stat in stats }
+        except GameStats.DoesNotExist:
+            return { stat: 0.0 for stat in stats }
+
     def __unicode__(self):
         return self.full_name
 

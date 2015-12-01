@@ -61,4 +61,6 @@ DK_NBA_PLAYER_NAME_MAP = {
     u'Manu Ginóbili': 'Manu Ginobili',
     'J.J. Barea': 'Jose Juan Barea',
     u'Cristiano Felício': 'Cristiano Felicio',
+    u'Kevin Martín': 'Kevin Martin',
+    u'André Miller': 'Andre Miller',
 }

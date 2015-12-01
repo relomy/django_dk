@@ -94,4 +94,7 @@ https://www.draftkings.com/contest/gamecenter/15953078 47k
 11/29/2015
 https://www.draftkings.com/contest/gamecenter/16079108 48k
 https://www.draftkings.com/contest/gamecenter/16037585 19k
+11/30/2015
+https://www.draftkings.com/contest/gamecenter/16203585 96k
+https://www.draftkings.com/contest/gamecenter/16202672 71k
 ```
