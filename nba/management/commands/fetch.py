@@ -7,6 +7,8 @@ from django.core.management.base import BaseCommand, CommandError
 
 class Command(BaseCommand):
 
+    CURR_SEASON = '2015-16'
+
     help = \
 '''
 Fetches player data from NBA.com. Usage:
@@ -15,10 +17,11 @@ $ python manage.py fetch
 
     def add_arguments(self, parser):
         parser.add_argument('--players', '-p',
-            action='store_true',
+            action='store',
             dest='players',
             default=False,
-            help='Fetch player data from NBA.com'
+            help=('Fetch player data from NBA.com'
+                  ' (curr for current season)')
         )
         parser.add_argument('--games', '-g',
             action='store',
@@ -57,10 +60,13 @@ $ python manage.py fetch
             )
         else:
             if options['players']:
-                player_parser.run()
+                if options['players'] == 'curr':
+                    player_parser.run(self.CURR_SEASON)
+                else:
+                    player_parser.run(options['players'])
             if options['games']:
                 if options['games'] == 'curr':
-                    game_parser.run('2015-16')
+                    game_parser.run(self.CURR_SEASON)
                 else:
                     game_parser.run(options['games'])
             if options['injuries']:

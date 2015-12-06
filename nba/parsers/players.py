@@ -2,7 +2,7 @@ import datetime
 import requests
 from nba.models import Team, Player
 
-def run():
+def run(season='2015-16'):
 
     def parse_players():
         """
@@ -44,7 +44,7 @@ def run():
         PARAMS = {
             'IsOnlyCurrentSeason': 1,
             'LeagueID': '00',
-            'Season': '2015-16'
+            'Season': season
         }
 
         response = requests.get(URL, params=PARAMS)

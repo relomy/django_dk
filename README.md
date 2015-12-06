@@ -15,8 +15,9 @@ ORDER BY g.date DESC;
 * Injuries
 
 ```
-SELECT p.first_name, p.last_name, i.status, i.date, i.comment
+SELECT p.first_name, p.last_name, t.name, i.status, i.date, i.comment
 FROM nba_player AS p JOIN nba_injury AS i ON p.id=i.player_id
+    JOIN nba_team AS t ON p.team_id=t.id
 WHERE date='today' OR date='yesterday'
 ORDER BY p.first_name, p.last_name, i.date DESC;
 ```
@@ -97,4 +98,16 @@ https://www.draftkings.com/contest/gamecenter/16037585 19k
 11/30/2015
 https://www.draftkings.com/contest/gamecenter/16203585 96k
 https://www.draftkings.com/contest/gamecenter/16202672 71k
+12/1/2015
+https://www.draftkings.com/contest/gamecenter/16289585 144k
+12/2/2015
+https://www.draftkings.com/contest/gamecenter/16382624 115k
+12/3/2015
+https://www.draftkings.com/contest/gamecenter/16471965 105k
+12/4/2015
+https://www.draftkings.com/contest/gamecenter/16552028 105k
+12/5/2015
+https://www.draftkings.com/contest/gamecenter/16621182 47k (Quarter Arcade)
+12/6/2015
+https://www.draftkings.com/contest/gamecenter/16731423 57k
 ```
