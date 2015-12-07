@@ -1,5 +1,7 @@
+import datetime
+import numpy
 from django.db import connection
-from nba.models import Player, DKContest
+from nba.models import Player, DKContest, DKResult
 
 def contestant_results():
     """
@@ -187,3 +189,99 @@ WHERE c.dk_id='%s'
         contest = DKContest.objects.filter(date=date).order_by('entries').last()
         calculate_ownerships(contest)
 
+def get_weighted_scores(days=7):
+    """
+    Used to calculate weighted scores for each player using contest data over
+    the last @days days. The score is the median dollars made or lost per
+    player.
+    """
+
+    def get_contests(days):
+        target_date = datetime.date.today() - datetime.timedelta(days=days)
+        return (DKContest.objects.filter(date__gte=target_date)
+                                 .order_by('date', 'entry_fee'))
+
+    def analyze_results(results, prize_map, entry_fee):
+        """
+        @param results [list]: List of (rank, pg_id, sg_id, ..., util_id) tups
+        @param prize_map [dict]: Mapping of {rank: payout}
+        @param entry_fee [float]: Cost to enter the contest
+        @return [dict]: {
+            [player_id]: [score list]
+        }
+        """
+        scores = {}
+        scores_aggregate = {}
+        id_fields = ['pg_id', 'sg_id', 'sf_id', 'pf_id', 'c_id', 'g_id',
+                     'f_id', 'util_id']
+        for result in results:
+            rank = result[0]
+            for player_id in result[1:]:
+                if player_id in scores:
+                    scores[player_id].append(rank)
+                else:
+                    scores[player_id] = [rank]
+        sorted_keys = sorted(prize_map.keys())
+        for player_id, scorelist in scores.iteritems():
+            if len(scorelist) * 5000 > float(len(results)): # > 0.5%
+                scores_aggregate[player_id] = sum(
+                    [get_weighted_score(x, prize_map, sorted_keys, entry_fee)
+                    for x in scorelist]
+                ) / float(len(scorelist))
+        return scores_aggregate
+
+    def get_prize_map(prizes):
+        prize_map = {}
+        for prize in prizes:
+            prize_map[prize.lower_rank] = float(prize.payout)
+        print prize_map
+        return prize_map
+
+    def get_weighted_score(index, prize_map, sorted_keys, entry_fee):
+        target_rank = index + 1
+        for rank in sorted_keys:
+            if target_rank <= rank:
+                return prize_map[rank] - entry_fee
+        return -entry_fee
+
+    def get_results(contest_id):
+        query = '''
+SELECT rank, pg_id, sg_id, sf_id, pf_id, c_id, g_id, f_id, util_id
+FROM nba_dkcontest AS c JOIN nba_dkresult AS r ON c.id=r.contest_id
+WHERE c.dk_id='%s'
+''' % contest_id
+        cursor = connection.cursor()
+        cursor.execute(query)
+        rows = [row for row in cursor.fetchall()]
+        return rows
+
+    scores_weighted_all = {}
+    for contest in get_contests(days):
+        print contest
+        prize_map = get_prize_map(contest.payouts.all())
+        scores_weighted = analyze_results(
+            get_results(contest.dk_id), prize_map, float(contest.entry_fee)
+        )
+        for player_id, score in scores_weighted.iteritems():
+            player = Player.objects.get(id=player_id)
+            if player in scores_weighted_all:
+                scores_weighted_all[player].append(score)
+            else:
+                scores_weighted_all[player] = [score]
+    for player, scores in scores_weighted_all.iteritems():
+        scores_weighted_all[player] = (
+            numpy.median(scores),
+            len(scores)
+        )
+    # Return { player: (score, num data) }
+    return scores_weighted_all
+
+def print_weighted_scores(days=7):
+    scores = get_weighted_scores(days)
+    sorted_scores = sorted(
+        [(k, v) for k, v in scores.iteritems()],
+        key=lambda x: x[1],
+        reverse=True
+    )
+    for player, score in sorted_scores:
+        print player, score

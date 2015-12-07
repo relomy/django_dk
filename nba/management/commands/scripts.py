@@ -50,6 +50,12 @@ $ python manage.py scripts
             help=('Percentile to split the data (cohort level - used in'
                   ' ownerships-player and ownerships-contest')
         )
+        parser.add_argument('--weighted-scores', '-ws',
+            action='store_true',
+            dest='weighted_scores',
+            default=False,
+            help='Compare weighted scores ($ made/player) for all players'
+        )
 
     def handle(self, *args, **options):
         if options['contestants']:
@@ -80,4 +86,5 @@ $ python manage.py scripts
                 results_scripts.player_ownerships_timeseries(
                     player.full_name, percentile=options['percentile']
                 )
-
+        if options['weighted_scores']:
+            results_scripts.print_weighted_scores()
