@@ -252,10 +252,25 @@ class DKContest(models.Model):
     total_prizes = models.DecimalField(max_digits=18, decimal_places=2,
                                        null=True, blank=True)
     entries = models.PositiveIntegerField(null=True, blank=True)
+    entry_fee = models.DecimalField(max_digits=18, decimal_places=2,
+                                    null=True, blank=True)
     positions_paid = models.PositiveIntegerField(null=True, blank=True)
 
     def __unicode__(self):
         return '%s %s' % (self.name, self.date)
+
+class DKContestPayout(models.Model):
+    contest = models.ForeignKey(DKContest, related_name='payouts')
+    upper_rank = models.PositiveIntegerField()
+    lower_rank = models.PositiveIntegerField()
+    payout = models.DecimalField(max_digits=18, decimal_places=2)
+
+    class Meta:
+        unique_together = ('contest', 'upper_rank', 'lower_rank')
+
+    def __unicode__(self):
+        return ('%s (%s - %s: %s)' %
+                (self.contest, self.upper_rank, self.lower_rank, self.payout))
 
 class DKResult(models.Model):
     contest = models.ForeignKey(DKContest, related_name='results')

@@ -41,7 +41,32 @@ $ python manage.py fetch
             nargs='+',
             dest='dk_results',
             default=False,
-            help='Fetch contest result data from draftkings.com'
+            help='Fetch contest result data from draftkings.com by id'
+        )
+        parser.add_argument('--dk-results-limit', '-rl',
+            action='store',
+            type=int,
+            dest='dk_results_limit',
+            default=1,
+            help='Fetch contest result data from draftkings.com by previous'
+        )
+        parser.add_argument('--dk-results-contest', '-dkrcontest',
+            action='store_true',
+            dest='dk_results_contest',
+            default=False,
+            help='Fetch contest metadata'
+        )
+        parser.add_argument('--dk-results-csv', '-dkrcsv',
+            action='store_true',
+            dest='dk_results_csv',
+            default=False,
+            help='Fetch contest results csv'
+        )
+        parser.add_argument('--dk-results-parse', '-dkrparse',
+            action='store_true',
+            dest='dk_results_parse',
+            default=False,
+            help='Dump the contest results csv into the database'
         )
         parser.add_argument('--update', '-u',
             action='store_true',
@@ -55,7 +80,7 @@ $ python manage.py fetch
             game_parser.run('2015-16')
             injury_parser.run()
             dkresults_parser.run(
-                contest_ids=get_contest_ids(limit=2),
+                contest_ids=get_contest_ids(limit=1),
                 contest=True, resultscsv=True, resultsparse=True
             )
         else:
@@ -74,5 +99,15 @@ $ python manage.py fetch
             if options['dk_results']:
                 dkresults_parser.run(
                     contest_ids=options['dk_results'],
-                    contest=True, resultscsv=True, resultsparse=True
+                    contest=options['dk_results_contest'],
+                    resultscsv=options['dk_results_csv'],
+                    resultsparse=options['dk_results_parse']
                 )
+            if options['dk_results_limit']:
+                dkresults_parser.run(
+                    contest_ids=get_contest_ids(options['dk_results_limit']),
+                    contest=options['dk_results_contest'],
+                    resultscsv=options['dk_results_csv'],
+                    resultsparse=options['dk_results_parse']
+                )
+

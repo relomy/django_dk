@@ -5,7 +5,7 @@ import re
 import zipfile
 import requests
 from bs4 import BeautifulSoup
-from nba.models import Player, DKContest, DKResult
+from nba.models import Player, DKContest, DKContestPayout, DKResult
 from nba.utils import get_date_yearless
 
 STOP_WORDS = set(['PG', 'SG', 'SF', 'PF', 'C', 'F', 'G', 'UTIL'])
@@ -16,9 +16,10 @@ def run(contest_ids=[], contest=True, resultscsv=True, resultsparse=True):
     """
     CSVPATH = 'nba/data/results'
 
+    def dollars_to_decimal(dollarstr):
+        return decimal.Decimal(dollarstr.replace('$', '').replace(',', ''))
+
     def get_contest_data(contest_id):
-        def dollars_to_decimal(dollarstr):
-            return decimal.Decimal(dollarstr.replace('$', '').replace(',', ''))
 
         def datestr_to_date(datestr):
             """
@@ -47,9 +48,47 @@ def run(contest_ids=[], contest=True, resultscsv=True, resultsparse=True):
                 'positions_paid': int(info_header[4].string)
             })
         except IndexError:
+            # This error occurs for old contests whose pages no longer are
+            # being served.
             # Traceback:
             # header = soup.find_all(class_='top')[0].find_all('h4')
             # IndexError: list index out of range
+            print 'Couldn\'t find DK contest with id %s' % contest_id
+
+    def get_contest_prize_data(contest_id):
+        def place_to_number(s):
+            return int(re.findall(r'\d+', s)[0])
+
+        URL = 'https://www.draftkings.com/contest/detailspop'
+        HEADERS = { 'cookie': os.environ['DK_AUTH_COOKIES'] }
+        PARAMS = {
+            'contestId': contest_id,
+            'showDraftButton': False,
+            'defaultToDetails': True,
+            'layoutType': 'legacy'
+        }
+        response = requests.get(URL, headers=HEADERS, params=PARAMS)
+        soup = BeautifulSoup(response.text, 'html5lib')
+
+        try:
+            payouts = soup.find_all(id='payouts-table')[0].find_all('tr')
+            entry_fee = soup.find_all('h2')[0].text.split('|')[2].strip()
+            dkcontest = DKContest.objects.get(dk_id=contest_id)
+            dkcontest.entry_fee = dollars_to_decimal(entry_fee)
+            dkcontest.save()
+            for payout in payouts:
+                places, payout = [x.string for x in payout.find_all('td')]
+                places = [place_to_number(x.strip()) for x in places.split('-')]
+                top, bot = ((places[0], places[0]) if len(places) == 1
+                            else places)
+                DKContestPayout.objects.update_or_create(
+                    contest=dkcontest,
+                    upper_rank=top,
+                    lower_rank=bot,
+                    defaults={ 'payout': dollars_to_decimal(payout) }
+                )
+        except IndexError:
+            # See comment in get_contest_data()
             print 'Couldn\'t find DK contest with id %s' % contest_id
 
     def get_contest_result_data(contest_id):
@@ -138,6 +177,7 @@ def run(contest_ids=[], contest=True, resultscsv=True, resultsparse=True):
     for contest_id in contest_ids:
         if contest:
             get_contest_data(contest_id)
+            get_contest_prize_data(contest_id)
         if resultscsv:
             get_contest_result_data(contest_id)
         if resultsparse:
