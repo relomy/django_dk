@@ -1,4 +1,5 @@
-import nba.scripts.results as results_scripts
+import nba.scripts.results as result_scripts
+import nba.scripts.lineups as lineup_scripts
 from nba.models import Player, DKContest
 from django.core.management.base import BaseCommand, CommandError
 
@@ -56,35 +57,43 @@ $ python manage.py scripts
             default=False,
             help='Compare weighted scores ($ made/player) for all players'
         )
+        parser.add_argument('--lineup', '-l',
+            action='store_true',
+            dest='lineup',
+            default=False,
+            help='Generate lineups'
+        )
 
     def handle(self, *args, **options):
         if options['contestants']:
-            results_scripts.contestant_results()
+            result_scripts.contestant_results()
         if options['ownerships_contest']:
             for contest_id in options['ownerships_contest']:
                 contest = DKContest.objects.get(dk_id=contest_id)
                 print '=================='
                 print contest.dk_id, contest.date, contest.name
-                results_scripts.player_ownerships(
+                result_scripts.player_ownerships(
                     contest.dk_id, percentile=options['percentile']
                 )
         if options['ownerships_contest_all']:
             for contest in DKContest.objects.all().order_by('dk_id'):
                 print '=================='
                 print contest.dk_id, contest.date, contest.name
-                results_scripts.player_ownerships(
+                result_scripts.player_ownerships(
                     contest.dk_id, percentile=options['percentile']
                 )
         if options['ownerships_player']:
-            results_scripts.player_ownerships_timeseries(
+            result_scripts.player_ownerships_timeseries(
                 options['ownerships_player'], percentile=options['percentile']
             )
         if options['ownerships_player_all']:
             for player in (Player.objects.all()
                                          .order_by('last_name', 'first_name')):
                 print player.full_name
-                results_scripts.player_ownerships_timeseries(
+                result_scripts.player_ownerships_timeseries(
                     player.full_name, percentile=options['percentile']
                 )
         if options['weighted_scores']:
-            results_scripts.print_weighted_scores()
+            result_scripts.print_weighted_scores()
+        if options['lineup']:
+            lineup_scripts.set_lineup()

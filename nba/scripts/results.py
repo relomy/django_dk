@@ -234,7 +234,6 @@ def get_weighted_scores(days=7):
         prize_map = {}
         for prize in prizes:
             prize_map[prize.lower_rank] = float(prize.payout)
-        print prize_map
         return prize_map
 
     def get_weighted_score(index, prize_map, sorted_keys, entry_fee):
@@ -255,6 +254,7 @@ WHERE c.dk_id='%s'
         rows = [row for row in cursor.fetchall()]
         return rows
 
+    print 'Calculating weighted scores...'
     scores_weighted_all = {}
     for contest in get_contests(days):
         print contest

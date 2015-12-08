@@ -73,12 +73,7 @@ def get_contest_ids(limit=1, entry_fee=None):
     last = today - datetime.timedelta(days=limit)
     contests = (DKContest.objects.filter(date__gte=last, entry_fee=entry_fee)
                 if entry_fee else DKContest.objects.filter(date__gte=last))
-    for contest in contests:
-        num_results = contest.results.count()
-        print ('%d entries found for %s, %d expected'
-               % (contest.entries, contest.name, num_results))
-        if contest.entries != results:
-            contest_ids.append(contest.dk_id)
+    contest_ids = [contest.dk_id for contest in contests]
     print 'Contest ids: %s' % ', '.join(contest_ids)
     return contest_ids
 

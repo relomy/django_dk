@@ -48,7 +48,7 @@ $ python manage.py fetch
             action='store',
             type=int,
             dest='dk_results_limit',
-            default=1,
+            default=-1,
             help='Fetch contest result data from draftkings.com by previous'
         )
         parser.add_argument('--dk-results-contest', '-dkrcontest',
@@ -124,7 +124,7 @@ $ python manage.py fetch
                     resultscsv=options['dk_results_csv'],
                     resultsparse=options['dk_results_parse']
                 )
-            if options['dk_results_limit']:
+            if options['dk_results_limit'] > -1:
                 dkresults_parser.run(
                     contest_ids=get_contest_ids(options['dk_results_limit']),
                     contest=options['dk_results_contest'],

@@ -84,12 +84,15 @@ def write_salaries_to_db(input_rows, date=datetime.date.today()):
     csvreader = reader(input_rows, delimiter=',', quotechar='"')
     for i, row in enumerate(csvreader):
         if i != 0 and len(row) == 6: # Ignore possible empty rows
-            pos, player, salary, game, ppg, team = row
+            pos, name, salary, game, ppg, team = row
+            player = Player.get_by_name(name)
             dksalary, _ = DKSalary.objects.get_or_create(
-                player=Player.get_by_name(player),
+                player=player,
                 date=date,
                 defaults={ 'salary': int(salary) }
             )
+            player.dk_position = pos
+            player.save()
             if dksalary.salary != int(salary):
                 print ('Warning: trying to overwrite salary for %s.'
                        ' Ignoring - did not overwrite' % player)
