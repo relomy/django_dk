@@ -1,8 +1,7 @@
-# -*- coding: utf-8 -*-
-
 import datetime
 import re
 import time
+from nba.models import DKContest
 
 def get_date_yearless(datestr):
     """
@@ -18,8 +17,9 @@ def get_date_yearless(datestr):
     return (date if date <= datetime.date.today()
             else datetime.date(year-1, month, int(day)))
 
-def get_contest_ids(limit=0, until=None, filter_sharpshooter=False):
+def get_contest_ids_from_readme(limit=0, until=None, filter_sharpshooter=False):
     """
+    DEPRECATED
     @param limit [int]: Number of results to return, from the most recent
     @param until [str]: Most recent date to consider in the format 'm/d/YYYY'
     @param filter_sharpshooter [bool]: True to filter for Sharpshooter contests
@@ -46,6 +46,42 @@ def get_contest_ids(limit=0, until=None, filter_sharpshooter=False):
     ids = re.findall(regex, text)
     return ids[-limit:] # Default of 0 returns the entire list
 
+def get_empty_contest_ids():
+    """
+    Returns a list of contest ids for contests that are missing results data
+    """
+    contest_ids = []
+    today = datetime.date.today()
+    last = today - datetime.timedelta(days=7)
+    contests = DKContest.objects.filter(date__gte=last)
+    for contest in contests:
+        num_results = contest.results.count()
+        print ('%d entries expected for %s, %d found'
+               % (contest.entries, contest.name, num_results))
+        if num_results == 0:
+            contest_ids.append(contest.dk_id)
+    print 'Contest ids: %s' % ', '.join(contest_ids)
+    return contest_ids
+
+def get_contest_ids(limit=1, entry_fee=None):
+    """
+    Returns a list of contest ids for the last @limit days with an optional
+    additional @entry_fee filter
+    """
+    contest_ids = []
+    today = datetime.date.today()
+    last = today - datetime.timedelta(days=limit)
+    contests = (DKContest.objects.filter(date__gte=last, entry_fee=entry_fee)
+                if entry_fee else DKContest.objects.filter(date__gte=last))
+    for contest in contests:
+        num_results = contest.results.count()
+        print ('%d entries found for %s, %d expected'
+               % (contest.entries, contest.name, num_results))
+        if contest.entries != results:
+            contest_ids.append(contest.dk_id)
+    print 'Contest ids: %s' % ', '.join(contest_ids)
+    return contest_ids
+
 class Timer:
     @classmethod
     def log_elapsed_time(cls, s, prev_time):
@@ -53,14 +89,4 @@ class Timer:
         print '[Elapsed time] %s: %f' % (s, curr_time - prev_time)
         return curr_time
 
-# Maps DK player full names to NBA.com full names
-DK_NBA_PLAYER_NAME_MAP = {
-    'Denis Schroder': 'Dennis Schroder',
-    u'José Calderón': 'Jose Calderon',
-    'Chuck Hayes': 'Charles Hayes',
-    u'Manu Ginóbili': 'Manu Ginobili',
-    'J.J. Barea': 'Jose Juan Barea',
-    u'Cristiano Felício': 'Cristiano Felicio',
-    u'Kevin Martín': 'Kevin Martin',
-    u'André Miller': 'Andre Miller',
-}
+

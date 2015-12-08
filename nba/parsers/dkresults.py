@@ -40,13 +40,17 @@ def run(contest_ids=[], contest=True, resultscsv=True, resultsparse=True):
             info_header = (soup.find_all(class_='top')[0]
                                .find_all(class_='info-header')[0]
                                .find_all('span'))
-            DKContest.objects.update_or_create(dk_id=contest_id, defaults={
-                'name': header[0].string,
-                'total_prizes': dollars_to_decimal(header[1].string),
-                'date': datestr_to_date(info_header[0].string),
-                'entries': int(info_header[2].string),
-                'positions_paid': int(info_header[4].string)
-            })
+            completed = info_header[3].string
+            if completed.strip().upper() == 'COMPLETED':
+                DKContest.objects.update_or_create(dk_id=contest_id, defaults={
+                    'name': header[0].string,
+                    'total_prizes': dollars_to_decimal(header[1].string),
+                    'date': datestr_to_date(info_header[0].string),
+                    'entries': int(info_header[2].string),
+                    'positions_paid': int(info_header[4].string)
+                })
+            else:
+                print 'Contest %s is still in progress' % contest_id
         except IndexError:
             # This error occurs for old contests whose pages no longer are
             # being served.

@@ -1,54 +1,83 @@
+"""
+URL: https://www.draftkings.com/lobby/getcontests?sport=NBA
+Response format: {
+    'SelectedSport': 4,
+    # To find the correct contests, see: find_new_contests()
+    'Contests': [{
+        'id': '16911618',                              # Contest id
+        'n': 'NBA $375K Tipoff Special [$50K to 1st]', # Contest name
+        'po': 375000,                                  # Total payout
+        'm': 143750,                                   # Max entries
+        'a': 3.0,                                      # Entry fee
+        'sd': '/Date(1449619200000)/'                  # Start date
+        'dg': 8014                                     # Draft group
+        ... (the rest is unimportant)
+    },
+    ...
+    ],
+    # Draft groups are for querying salaries, see: run()
+    'DraftGroups': [{
+        'DraftGroupId': 8014,
+        'ContestTypeId': 5,
+        'StartDate': '2015-12-09T00:00:00.0000000Z',
+        'StartDateEst': '2015-12-08T19:00:00.0000000',
+        'Sport': 'NBA',
+        'GameCount': 6,
+        'ContestStartTimeSuffix': null,
+        'ContestStartTimeType': 0,
+        'Games': null
+    },
+    ...
+    ],
+    ... (the rest is unimportant)
+}
+"""
+
 from csv import reader, writer
 import datetime
 import os
 import re
+from pytz import timezone
 import requests
-from nba.models import Player, DKSalary
+from nba.models import Player, DKContest, DKSalary
 
 CSVPATH = 'nba/data/salaries'
 
-def get_next_contest():
+def find_new_contests():
     """
-    Response format: {
-        'SelectedSport': 4,
-        # To find the correct contests
-        'Contests': [{
-            'id': '16911618',                              # Contest id
-            'n': 'NBA $375K Tipoff Special [$50K to 1st]', # Contest name
-            'po': 375000,                                  # Total payout
-            'm': 143750,                                   # Max entries
-            'a': 3.0,                                      # Entry fee
-            'sd': '/Date(1449619200000)/'                  # Start date
-            'dg': 8014                                     # Draft group
-            ... (the rest is unimportant)
-        },
-        ...
-        ],
-        # Draft groups are for querying salaries
-        'DraftGroups': [{
-            'DraftGroupId': 8014,
-            'ContestTypeId': 5,
-            'StartDate': '2015-12-09T00:00:00.0000000Z',
-            'StartDateEst': '2015-12-08T19:00:00.0000000',
-            'Sport': 'NBA',
-            'GameCount': 6,
-            'ContestStartTimeSuffix': null,
-            'ContestStartTimeType': 0,
-            'Games': null
-        },
-        ...
-        ],
-        ... (the rest is unimportant)
-    }
+    Maybe this belongs in another module
     """
 
-    """
-    TODO
-    """
+    def get_largest_contest(contests, entry_fee):
+        return sorted([c for c in contests if c['a'] == entry_fee],
+                      key=lambda x: x['m'],
+                      reverse=True)[0]
+
+    def get_pst_from_timestamp(timestamp_str):
+        timestamp = float(re.findall('[^\d]*(\d+)[^\d]*', timestamp_str)[0])
+        return datetime.datetime.fromtimestamp(
+            timestamp / 1000, timezone('America/Los_Angeles')
+        )
+
     URL = 'https://www.draftkings.com/lobby/getcontests?sport=NBA'
     HEADERS = { 'cookie': os.environ['DK_AUTH_COOKIES'] }
 
     response = requests.get(URL, headers=HEADERS).json()
+    contests = [
+        get_largest_contest(response['Contests'], 3),
+        get_largest_contest(response['Contests'], 0.25),
+        get_largest_contest(response['Contests'], 27)
+    ]
+    for contest in contests:
+        date_time = get_pst_from_timestamp(contest['sd'])
+        DKContest.objects.update_or_create(dk_id=contest['id'], defaults={
+            'date': date_time.date(),
+            'datetime': date_time,
+            'name': contest['n'],
+            'total_prizes': contest['po'],
+            'entries': contest['m'],
+            'entry_fee': contest['a']
+        })
 
 def write_salaries_to_db(input_rows, date=datetime.date.today()):
     return_rows = []
@@ -88,7 +117,15 @@ def run(writecsv=True):
     Downloads and unzips the CSV salaries and then populates the database
     """
 
-    def get_salary_csv(draft_group_id, contest_type_id):
+    def get_salary_date(draft_groups):
+        dates = [datetime.datetime.strptime(
+            dg['StartDateEst'].split('T')[0], '%Y-%m-%d'
+        ).date() for dg in response['DraftGroups']]
+        date_counts = [(d, dates.count(d)) for d in set(dates)]
+        # Get the date from the (date, count) tuple with the most counts
+        return sorted(date_counts, key=lambda x: x[1])[-1][0]
+
+    def get_salary_csv(draft_group_id, contest_type_id, date):
         """
         Assume the salaries for each player in different draft groups are the
         same for any given day.
@@ -98,15 +135,13 @@ def run(writecsv=True):
             'contestTypeId': contest_type_id,
             'draftGroupId': draft_group_id
         })
-        return write_salaries_to_db(response.text.split('\n'),
-                                    datetime.date.today())
+        return write_salaries_to_db(response.text.split('\n'), date)
 
-    def write_csv(rows):
+    def write_csv(rows, date):
         HEADER_ROW = ['Position', 'Name', 'Salary', 'GameInfo',
                       'AvgPointsPerGame', 'teamAbbrev']
-        TODAY = datetime.date.today()
         outfile = ('%s/dk_nba_salaries_%s.csv'
-                   % (CSVPATH, TODAY.strftime('%Y_%m_%d')))
+                   % (CSVPATH, date.strftime('%Y_%m_%d')))
         # Remove duplicate rows and sort by salary, then name
         # Lists are unhashable so convert each element to a tuple
         rows = sorted(list(set([tuple(r) for r in rows])),
@@ -123,10 +158,14 @@ def run(writecsv=True):
 
     response = requests.get(URL, headers=HEADERS).json()
     rows = []
+    # dg['StartDateEst'] should be mostly the same for draft groups, (might not
+    # be the same for the rare long-running contest) and should be the date
+    # we're looking for (game date in US time).
+    date = get_salary_date(response['DraftGroups'])
     for dg in response['DraftGroups']:
-        print ('Updating salaries for draft group %d, contest type %d'
-               % (dg['DraftGroupId'], dg['ContestTypeId']))
-        rows += get_salary_csv(dg['DraftGroupId'], dg['ContestTypeId'])
+        print ('Updating salaries for draft group %d, contest type %d, date %s'
+               % (dg['DraftGroupId'], dg['ContestTypeId'], date))
+        rows += get_salary_csv(dg['DraftGroupId'], dg['ContestTypeId'], date)
     if writecsv:
-        write_csv(rows)
+        write_csv(rows, date)
 

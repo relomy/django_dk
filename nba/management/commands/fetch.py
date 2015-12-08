@@ -3,7 +3,7 @@ import nba.parsers.games as game_parser
 import nba.parsers.injuries as injury_parser
 import nba.parsers.dkresults as dkresults_parser
 import nba.parsers.dksalaries as dksalaries_parser
-from nba.utils import get_contest_ids
+from nba.utils import get_contest_ids, get_empty_contest_ids
 from django.core.management.base import BaseCommand, CommandError
 
 class Command(BaseCommand):
@@ -81,6 +81,12 @@ $ python manage.py fetch
             default=False,
             help='Dumps all DK salary CSVs to the database'
         )
+        parser.add_argument('--dk-new-contests', '-nc',
+            action='store_true',
+            dest='dk_new_contests',
+            default=False,
+            help='Fetch today\'s new contests from draftkings.com'
+        )
         parser.add_argument('--update', '-u',
             action='store_true',
             dest='update',
@@ -90,11 +96,12 @@ $ python manage.py fetch
 
     def handle(self, *args, **options):
         if options['update']:
+            dksalaries_parser.find_new_contests()
             game_parser.run('2015-16')
             injury_parser.run()
             dksalaries_parser.run()
             dkresults_parser.run(
-                contest_ids=get_contest_ids(limit=1),
+                contest_ids=get_empty_contest_ids(),
                 contest=True, resultscsv=True, resultsparse=True
             )
         else:
@@ -128,4 +135,6 @@ $ python manage.py fetch
                 dksalaries_parser.run()
             if options['dk_salaries_dump']:
                 dksalaries_parser.dump_csvs()
+            if options['dk_new_contests']:
+                dksalaries_parser.find_new_contests()
 

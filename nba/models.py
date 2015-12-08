@@ -1,5 +1,18 @@
+# -*- coding: utf-8 -*-
+
 from django.db import models
-from nba.utils import DK_NBA_PLAYER_NAME_MAP
+
+# Maps DK player full names to NBA.com full names
+DK_NBA_PLAYER_NAME_MAP = {
+    'Denis Schroder': 'Dennis Schroder',
+    u'José Calderón': 'Jose Calderon',
+    'Chuck Hayes': 'Charles Hayes',
+    u'Manu Ginóbili': 'Manu Ginobili',
+    'J.J. Barea': 'Jose Juan Barea',
+    u'Cristiano Felício': 'Cristiano Felicio',
+    u'Kevin Martín': 'Kevin Martin',
+    u'André Miller': 'Andre Miller',
+}
 
 # Create your models here.
 
@@ -248,6 +261,7 @@ class Injury(models.Model):
 class DKContest(models.Model):
     dk_id = models.CharField(max_length=15, unique=True)
     date = models.DateField(null=True, blank=True)
+    datetime = models.DateTimeField(null=True, blank=True)
     name = models.CharField(max_length=100, null=True, blank=True)
     total_prizes = models.DecimalField(max_digits=18, decimal_places=2,
                                        null=True, blank=True)
