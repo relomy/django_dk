@@ -107,7 +107,10 @@ https://www.draftkings.com/contest/gamecenter/16471965 105k
 12/4/2015
 https://www.draftkings.com/contest/gamecenter/16552028 105k
 12/5/2015
-https://www.draftkings.com/contest/gamecenter/16621182 47k (Quarter Arcade)
+https://www.draftkings.com/contest/gamecenter/16633328 96k
+https://www.draftkings.com/contest/gamecenter/16621182 47k
 12/6/2015
 https://www.draftkings.com/contest/gamecenter/16731423 57k
+12/7/2015
+https://www.draftkings.com/contest/gamecenter/16839378 96k
 ```

@@ -299,3 +299,14 @@ class DKResult(models.Model):
 
     def __unicode__(self):
         return '%s %s' % (unicode(self.contest), unicode(self.rank))
+
+class DKSalary(models.Model):
+    player = models.ForeignKey(Player, related_name='dk_salaries')
+    date = models.DateField(null=True, blank=True)
+    salary = models.PositiveIntegerField()
+
+    class Meta:
+        unique_together = ('player', 'date')
+
+    def __unicode__(self):
+        return '%s %s %s' % (self.player, self.date, self.salary)
