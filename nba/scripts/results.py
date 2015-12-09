@@ -1,9 +1,10 @@
 import datetime
+import logging
 import numpy
 from django.db import connection
 from nba.models import Player, DKContest, DKResult
 
-def contestant_results():
+def print_contestant_results():
     """
     Used to see the average rank of contestants by number of contests entered.
     The hypothesis is people who enter more contests will rank better than
@@ -57,7 +58,7 @@ ORDER BY c.dk_id, r.rank, r.id
         print '%d\t%.3f\t%d' % (i, sum(filtered) / len(filtered), len(filtered))
 
 
-def player_ownerships(contest_id, percentile=20):
+def print_player_ownerships(contest_id, percentile=20):
     """
     Used to see the difference between player ownerships in lineups in the top
     @percentile and all other lineups.
@@ -124,7 +125,7 @@ WHERE c.dk_id='%s'
                % (result[1], result[2], result[3], result[4], result[5],
                   result[0], fpts))
 
-def player_ownerships_timeseries(player_name, percentile=20):
+def print_player_ownerships_timeseries(player_name, percentile=20):
     """
     Used to see the difference between player ownerships in lineups in the top
     @percentile and all other lineups for a single player over time.
@@ -189,17 +190,25 @@ WHERE c.dk_id='%s'
         contest = DKContest.objects.filter(date=date).order_by('entries').last()
         calculate_ownerships(contest)
 
-def get_weighted_scores(days=7):
+def get_weighted_scores(date=datetime.date.today(), days=7, entry_fee=None):
     """
     Used to calculate weighted scores for each player using contest data over
     the last @days days. The score is the median dollars made or lost per
     player.
     """
+    logger = logging.getLogger()
 
     def get_contests(days):
-        target_date = datetime.date.today() - datetime.timedelta(days=days)
-        return (DKContest.objects.filter(date__gte=target_date)
-                                 .order_by('date', 'entry_fee'))
+        target_date = date - datetime.timedelta(days=days)
+        if entry_fee:
+            contests = DKContest.objects.filter(
+                date__gte=target_date, date__lte=date, entry_fee=entry_fee
+            )
+        else:
+            contests = DKContest.objects.filter(
+                date__gte=target_date, date__lte=date
+            )
+        return contests.order_by('date', 'entry_fee')
 
     def analyze_results(results, prize_map, entry_fee):
         """
@@ -254,10 +263,10 @@ WHERE c.dk_id='%s'
         rows = [row for row in cursor.fetchall()]
         return rows
 
-    print 'Calculating weighted scores...'
+    logger.info('Calculating weighted scores...')
     scores_weighted_all = {}
     for contest in get_contests(days):
-        print contest
+        logger.info(contest)
         prize_map = get_prize_map(contest.payouts.all())
         scores_weighted = analyze_results(
             get_results(contest.dk_id), prize_map, float(contest.entry_fee)

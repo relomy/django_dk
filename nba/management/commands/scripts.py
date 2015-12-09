@@ -1,5 +1,7 @@
+import logging
 import nba.scripts.results as result_scripts
 import nba.scripts.lineups as lineup_scripts
+import nba.scripts.validate as validation_scripts
 from nba.models import Player, DKContest
 from django.core.management.base import BaseCommand, CommandError
 
@@ -63,37 +65,55 @@ $ python manage.py scripts
             default=False,
             help='Generate lineups'
         )
+        parser.add_argument('--validate', '-val',
+            action='store_true',
+            dest='validate',
+            default=False,
+            help='Validate lineup generation model'
+        )
+        parser.add_argument('--info', '-i',
+            action='store_true',
+            dest='info',
+            default=False,
+            help='Validate lineup generation model'
+        )
 
     def handle(self, *args, **options):
+        if options['info']:
+            logging.basicConfig(level=logging.INFO, format='%(message)s')
+
         if options['contestants']:
-            result_scripts.contestant_results()
+            result_scripts.print_contestant_results()
         if options['ownerships_contest']:
             for contest_id in options['ownerships_contest']:
                 contest = DKContest.objects.get(dk_id=contest_id)
                 print '=================='
                 print contest.dk_id, contest.date, contest.name
-                result_scripts.player_ownerships(
+                result_scripts.print_player_ownerships(
                     contest.dk_id, percentile=options['percentile']
                 )
         if options['ownerships_contest_all']:
             for contest in DKContest.objects.all().order_by('dk_id'):
                 print '=================='
                 print contest.dk_id, contest.date, contest.name
-                result_scripts.player_ownerships(
+                result_scripts.print_player_ownerships(
                     contest.dk_id, percentile=options['percentile']
                 )
         if options['ownerships_player']:
-            result_scripts.player_ownerships_timeseries(
+            result_scripts.print_player_ownerships_timeseries(
                 options['ownerships_player'], percentile=options['percentile']
             )
         if options['ownerships_player_all']:
             for player in (Player.objects.all()
                                          .order_by('last_name', 'first_name')):
                 print player.full_name
-                result_scripts.player_ownerships_timeseries(
+                result_scripts.print_player_ownerships_timeseries(
                     player.full_name, percentile=options['percentile']
                 )
+
         if options['weighted_scores']:
             result_scripts.print_weighted_scores()
         if options['lineup']:
             lineup_scripts.set_lineup()
+        if options['validate']:
+            validation_scripts.run()

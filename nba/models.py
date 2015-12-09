@@ -145,6 +145,12 @@ class Player(models.Model):
         except GameStats.DoesNotExist:
             return { stat: 0.0 for stat in stats }
 
+    def get_salary(self, date):
+        try:
+            return DKSalary.objects.get(player=self, date=date).salary
+        except DKSalary.DoesNotExist:
+            return 0.0
+
     def __unicode__(self):
         return self.full_name
 
@@ -266,8 +272,7 @@ class DKContest(models.Model):
     total_prizes = models.DecimalField(max_digits=18, decimal_places=2,
                                        null=True, blank=True)
     entries = models.PositiveIntegerField(null=True, blank=True)
-    entry_fee = models.DecimalField(max_digits=18, decimal_places=2,
-                                    null=True, blank=True)
+    entry_fee = models.FloatField(null=True, blank=True)
     positions_paid = models.PositiveIntegerField(null=True, blank=True)
 
     def __unicode__(self):

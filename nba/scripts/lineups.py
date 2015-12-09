@@ -1,4 +1,5 @@
 import datetime
+import logging
 from nba.models import Player, DKSalary
 from nba.scripts.results import get_weighted_scores
 
@@ -7,7 +8,7 @@ LINEUP_SIZE = 8
 POSITIONS = ['PG', 'SG', 'SF', 'PF', 'C']
 
 def generate(scores, date=datetime.date.today(), top=10, prefill_players=[],
-             ignore_players=[], min_score=-0.5):
+             ignore_players=[], min_score=-1.5):
     """
     Strategy:
         1. Get all players for each position that satisfy some constraints
@@ -23,6 +24,7 @@ def generate(scores, date=datetime.date.today(), top=10, prefill_players=[],
     @param ignore_players [list]: Players to ignore when making the lineup
     @param min_score [int]: Limits the number of player scores to consider
     """
+    logger = logging.getLogger()
 
     def prefill(players):
         return {
@@ -40,15 +42,20 @@ def generate(scores, date=datetime.date.today(), top=10, prefill_players=[],
             res = res and player not in ignore_players
         return res
 
-    def get_and_print_pos_list(pos, eligible_players, min_score=0):
+    def get_and_print_pos_list(pos, eligible_players, min_score=0,
+                               max_players=-1):
         pos_list = [(player, scores[player][0], scores[player][1])
                     for player in eligible_players
                     if pfilter(player, pos, min_score)]
         pos_list_sorted = sorted(pos_list, key=lambda x: x[1], reverse=True)
-        print ('%ss:\n%s' %
-               (pos, '\n'.join('\t%s (%s, %s games)' % (player, score, freq)
-                               for (player, score, freq) in pos_list_sorted)))
-        return [x[0] for x in pos_list]
+        pos_list_sorted = (pos_list_sorted[:max_players]
+                           if max_players > -1 else pos_list_sorted)
+        logger.info('%ss:\n%s'
+                    % (pos, '\n'.join(['\t%s (%s, %s games)'
+                                       % (player, score, freq)
+                                       for (player, score, freq)
+                                       in pos_list_sorted])))
+        return [x[0] for x in pos_list_sorted]
 
     def get_lineup_salary(lineup, salary_map):
         return sum([salary_map[player.id] for player in lineup])
@@ -77,16 +84,15 @@ def generate(scores, date=datetime.date.today(), top=10, prefill_players=[],
     pos_lists = { 'PG': [], 'SG': [], 'SF': [], 'SG': [], 'C': [], 'G': [],
                   'F': [], 'UTIL': [] }
     lineups = [] # [([player list], [score], [salary])]
-    print '+----+'
-    print '|Data|'
-    print '+----+'
+    logger.info('+----+\n|Data|\n+----+')
 
     # 1. Get list of all eligible players for each position
     prefill_dict = prefill(prefill_players)
 
     for pos in POSITIONS:
         pos_lists[pos] = get_and_print_pos_list(pos, eligible_players,
-                                                min_score=min_score)
+                                                min_score=min_score,
+                                                max_players=4)
     pos_lists['G'] = pos_lists['PG'] + pos_lists['SG']
     pos_lists['F'] = pos_lists['SF'] + pos_lists['PF']
     pos_lists['UTIL'] = pos_lists['G'] + pos_lists['F']
@@ -96,25 +102,25 @@ def generate(scores, date=datetime.date.today(), top=10, prefill_players=[],
         if prefill_dict[pos]:
             pos_lists[pos] = prefill_dict[pos]
 
-    print 'Prefilled players:'
+    logger.info('Prefilled players:')
     for player in prefill_players:
         if player in scores:
-            print ('\t%s (%s, %s) (%s, %s games)' %
-                   (player, player.dk_position, salary_map[player.id],
-                    scores[player][0], scores[player][1]))
+            logger.info('\t%s (%s, %s) (%s, %s games)' %
+                        (player, player.dk_position, salary_map[player.id],
+                         scores[player][0], scores[player][1]))
         else:
-            print ('\t%s (%s, %s) (Not enough games played)' %
-                   (player, player.dk_position, salary_map[player.id]))
+            logger.info('\t%s (%s, %s) (Not enough games played)' %
+                        (player, player.dk_position, salary_map[player.id]))
 
-    print 'Ignored players:'
+    logger.debug('Ignored players:')
     for player in ignore_players:
         if player in scores:
-            print ('\t%s (%s, %s) (%s, %s games)' %
-                   (player, player.dk_position, salary_map[player.id],
-                    scores[player][0], scores[player][1]))
+            logger.info('\t%s (%s, %s) (%s, %s games)' %
+                        (player, player.dk_position, salary_map[player.id],
+                         scores[player][0], scores[player][1]))
         else:
-            print ('\t%s (%s, %s) (Not enough games played)' %
-                   (player, player.dk_position, salary_map[player.id]))
+            logger.info('\t%s (%s, %s) (Not enough games played)' %
+                        (player, player.dk_position, salary_map[player.id]))
 
     # 2. Find all eligible lineups
     for pg in pos_lists['PG']:
@@ -136,18 +142,26 @@ def generate(scores, date=datetime.date.today(), top=10, prefill_players=[],
                                         ))
 
     # 3. Get unique lineups and print results
-    print '+-------+'
-    print '|Lineups|'
-    print '+-------+'
+    logger.info('+-------+\n|Lineups|\n+-------+')
     filtered = filter_unique_lineups(lineups)
-    for lineup in sorted(filtered, key=lambda x: x[1], reverse=True)[:top]:
+    sorted_lineups = sorted(filtered, key=lambda x: x[1], reverse=True)
+    for lineup in sorted_lineups[:top]:
         players, score, salary = lineup
         player_strs = ['%s (%s)' % (player, player.dk_position)
                        for player in sorted(players)]
-        print '%s %s' % (score, salary)
-        print '\t%s' % (', '.join(player_strs[:4]))
-        print '\t%s' % (', '.join(player_strs[-4:]))
+        logger.info('%s %s' % (score, salary))
+        logger.info('\t%s' % (', '.join(player_strs[:4])))
+        logger.info('\t%s' % (', '.join(player_strs[-4:])))
+    if sorted_lineups:
+        return sorted_lineups[0][0] # Just return the players list for the top
+                                    # lineup
+    else:
+        return []
 
-def set_lineup():
-    scores = get_weighted_scores(days=7)
-    generate(scores)
+def set_lineup(date=datetime.date.today(), days=7, entry_fee=None):
+    # Subtract 1 to make sure you don't include scores for that date
+    scores_date = date - datetime.timedelta(days=1)
+    scores = get_weighted_scores(date=scores_date, days=days,
+                                 entry_fee=entry_fee)
+    return generate(scores, date=date)
+
