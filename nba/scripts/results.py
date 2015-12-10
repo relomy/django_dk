@@ -201,12 +201,14 @@ def get_weighted_scores(date=datetime.date.today(), days=7, entry_fee=None):
     def get_contests(days):
         target_date = date - datetime.timedelta(days=days)
         if entry_fee:
+            # Be sure not to include the results for the current date in the
+            # date query
             contests = DKContest.objects.filter(
-                date__gte=target_date, date__lte=date, entry_fee=entry_fee
+                date__gte=target_date, date__lt=date, entry_fee=entry_fee
             )
         else:
             contests = DKContest.objects.filter(
-                date__gte=target_date, date__lte=date
+                date__gte=target_date, date__lt=date
             )
         return contests.order_by('date', 'entry_fee')
 
@@ -278,15 +280,12 @@ WHERE c.dk_id='%s'
             else:
                 scores_weighted_all[player] = [score]
     for player, scores in scores_weighted_all.iteritems():
-        scores_weighted_all[player] = (
-            numpy.median(scores),
-            len(scores)
-        )
+        scores_weighted_all[player] = numpy.median(scores)
     # Return { player: (score, num data) }
     return scores_weighted_all
 
 def print_weighted_scores(days=7):
-    scores = get_weighted_scores(days)
+    scores = get_weighted_scores(days=days)
     sorted_scores = sorted(
         [(k, v) for k, v in scores.iteritems()],
         key=lambda x: x[1],

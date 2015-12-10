@@ -35,7 +35,7 @@ def generate(scores, date=datetime.date.today(), top=10, prefill_players=[],
     def pfilter(player, pos=None, min_score=-10000):
         res = True
         if min_score != None:
-            res = res and player in scores and scores[player][0] > min_score
+            res = res and player in scores and scores[player] > min_score
         if pos:
             res = res and player.dk_position == pos
         if ignore_players:
@@ -44,16 +44,14 @@ def generate(scores, date=datetime.date.today(), top=10, prefill_players=[],
 
     def get_and_print_pos_list(pos, eligible_players, min_score=0,
                                max_players=-1):
-        pos_list = [(player, scores[player][0], scores[player][1])
-                    for player in eligible_players
+        pos_list = [(player, scores[player]) for player in eligible_players
                     if pfilter(player, pos, min_score)]
         pos_list_sorted = sorted(pos_list, key=lambda x: x[1], reverse=True)
         pos_list_sorted = (pos_list_sorted[:max_players]
                            if max_players > -1 else pos_list_sorted)
         logger.info('%ss:\n%s'
-                    % (pos, '\n'.join(['\t%s (%s, %s games)'
-                                       % (player, score, freq)
-                                       for (player, score, freq)
+                    % (pos, '\n'.join(['\t%s (%s)' % (player, score)
+                                       for (player, score)
                                        in pos_list_sorted])))
         return [x[0] for x in pos_list_sorted]
 
@@ -66,7 +64,7 @@ def generate(scores, date=datetime.date.today(), top=10, prefill_players=[],
                 and len(set(lineup)) == LINEUP_SIZE)
 
     def lineup_score(lineup):
-        return sum([scores[player][0] for player in lineup])
+        return sum([scores[player] for player in lineup])
 
     def filter_unique_lineups(lineups):
         lineups_dict = {}
@@ -92,7 +90,7 @@ def generate(scores, date=datetime.date.today(), top=10, prefill_players=[],
     for pos in POSITIONS:
         pos_lists[pos] = get_and_print_pos_list(pos, eligible_players,
                                                 min_score=min_score,
-                                                max_players=4)
+                                                max_players=5)
     pos_lists['G'] = pos_lists['PG'] + pos_lists['SG']
     pos_lists['F'] = pos_lists['SF'] + pos_lists['PF']
     pos_lists['UTIL'] = pos_lists['G'] + pos_lists['F']
@@ -105,9 +103,9 @@ def generate(scores, date=datetime.date.today(), top=10, prefill_players=[],
     logger.info('Prefilled players:')
     for player in prefill_players:
         if player in scores:
-            logger.info('\t%s (%s, %s) (%s, %s games)' %
+            logger.info('\t%s (%s, %s) (%s)' %
                         (player, player.dk_position, salary_map[player.id],
-                         scores[player][0], scores[player][1]))
+                         scores[player]))
         else:
             logger.info('\t%s (%s, %s) (Not enough games played)' %
                         (player, player.dk_position, salary_map[player.id]))
@@ -115,9 +113,9 @@ def generate(scores, date=datetime.date.today(), top=10, prefill_players=[],
     logger.debug('Ignored players:')
     for player in ignore_players:
         if player in scores:
-            logger.info('\t%s (%s, %s) (%s, %s games)' %
+            logger.info('\t%s (%s, %s) (%s)' %
                         (player, player.dk_position, salary_map[player.id],
-                         scores[player][0], scores[player][1]))
+                         scores[player]))
         else:
             logger.info('\t%s (%s, %s) (Not enough games played)' %
                         (player, player.dk_position, salary_map[player.id]))
@@ -157,11 +155,4 @@ def generate(scores, date=datetime.date.today(), top=10, prefill_players=[],
                                     # lineup
     else:
         return []
-
-def set_lineup(date=datetime.date.today(), days=7, entry_fee=None):
-    # Subtract 1 to make sure you don't include scores for that date
-    scores_date = date - datetime.timedelta(days=1)
-    scores = get_weighted_scores(date=scores_date, days=days,
-                                 entry_fee=entry_fee)
-    return generate(scores, date=date)
 

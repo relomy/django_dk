@@ -1,9 +1,8 @@
 import datetime
 from nba.models import DKContest
-from nba.scripts.lineups import set_lineup
 
 def score_lineup(lineup, date):
-    return sum([player.get_stat(date, 'dk_points') for player in lineup])
+    return sum([player.get_dkpoints(date) for player in lineup])
 
 def get_contest_rank(contest, score):
     for result in contest.results.order_by('rank'):
@@ -26,14 +25,23 @@ def get_payout(contest, index):
             return prize_map[rank] - entry_fee
     return -entry_fee
 
-def run():
+def run(score_model, lineup_alg):
+    """
+    @score_model [function]: Scoring model
+    @lineup_alg [function]: Lineup generation algorithm
+    """
     today = datetime.date.today()
     dates = [today - datetime.timedelta(days=i) for i in range(20, -1, -1)]
     results = { 'score': [], 'rank': [], 'payout': [] }
     for date in dates:
         try:
+            print 'Getting contest data'
             contest = DKContest.objects.get(date=date, entry_fee=3)
-            lineup = set_lineup(date, entry_fee=3)
+            print 'Scoring model'
+            model_scores = score_model(date)
+            print 'Setting lineup'
+            lineup = lineup_alg(model_scores, date=date)
+            print 'Scoring lineup'
             score = score_lineup(lineup, date)
             rank = get_contest_rank(contest, score)
             entries = contest.entries
@@ -52,7 +60,7 @@ def run():
                                       % (player.full_name,
                                          player.dk_position,
                                          player.get_salary(date),
-                                         player.get_stat(date, 'dk_points'))
+                                         player.get_dkpoints(date))
                                      for player in lineup]))
                 results['score'].append(score)
                 results['rank'].append(float(rank) / entries)

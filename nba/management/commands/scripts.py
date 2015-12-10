@@ -1,6 +1,7 @@
 import logging
 import nba.scripts.results as result_scripts
 import nba.scripts.lineups as lineup_scripts
+import nba.scripts.score as score_scripts
 import nba.scripts.validate as validation_scripts
 from nba.models import Player, DKContest
 from django.core.management.base import BaseCommand, CommandError
@@ -59,6 +60,12 @@ $ python manage.py scripts
             default=False,
             help='Compare weighted scores ($ made/player) for all players'
         )
+        parser.add_argument('--score-points-per-salary', '-spps',
+            action='store_true',
+            dest='score_points_per_salary',
+            default=False,
+            help='Create a score mapping'
+        )
         parser.add_argument('--lineup', '-l',
             action='store_true',
             dest='lineup',
@@ -111,9 +118,17 @@ $ python manage.py scripts
                     player.full_name, percentile=options['percentile']
                 )
 
-        if options['weighted_scores']:
-            result_scripts.print_weighted_scores()
         if options['lineup']:
-            lineup_scripts.set_lineup()
+            if options['weighted_scores']:
+                lineup_scripts.generate(result_scripts.get_weighted_scores())
+            elif options['score_points_per_salary']:
+                lineup_scripts.generate(
+                    score_scripts.median_points_per_salary()
+                )
         if options['validate']:
-            validation_scripts.run()
+            if options['weighted_scores']:
+                validation_scripts.run(result_scripts.get_weighted_scores,
+                                       lineup_scripts.generate)
+            elif options['score_points_per_salary']:
+                validation_scripts.run(score_scripts.median_points_per_salary,
+                                       lineup_scripts.generate)

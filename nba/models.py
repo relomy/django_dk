@@ -119,6 +119,12 @@ class Player(models.Model):
             except cls.DoesNotExist, cls.MultipleObjectsReturned:
                 return cls.get_by_name_slow(name)
 
+    def get_dkpoints(self, date):
+        try:
+            return GameStats.objects.get(game__date=date, player=self).dk_points
+        except GameStats.DoesNotExist:
+            return 0.0
+
     def get_stat(self, date, stat):
         """
         @param date [datetime.date]: Date to query
@@ -149,7 +155,7 @@ class Player(models.Model):
         try:
             return DKSalary.objects.get(player=self, date=date).salary
         except DKSalary.DoesNotExist:
-            return 0.0
+            return None
 
     def __unicode__(self):
         return self.full_name
