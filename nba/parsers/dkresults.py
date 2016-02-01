@@ -41,7 +41,9 @@ def run(contest_ids=[], contest=True, resultscsv=True, resultsparse=True):
                                .find_all(class_='info-header')[0]
                                .find_all('span'))
             completed = info_header[3].string
+            print int(info_header[4].string)
             if completed.strip().upper() == 'COMPLETED':
+                print 'completed'
                 DKContest.objects.update_or_create(dk_id=contest_id, defaults={
                     'name': header[0].string,
                     'total_prizes': dollars_to_decimal(header[1].string),

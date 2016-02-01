@@ -190,7 +190,7 @@ WHERE c.dk_id='%s'
         contest = DKContest.objects.filter(date=date).order_by('entries').last()
         calculate_ownerships(contest)
 
-def get_weighted_scores(date=datetime.date.today(), days=7, entry_fee=None):
+def get_weighted_scores(date=datetime.date.today(), days=7, entry_fee=3.0):
     """
     Used to calculate weighted scores for each player using contest data over
     the last @days days. The score is the median dollars made or lost per

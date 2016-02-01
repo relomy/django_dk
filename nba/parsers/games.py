@@ -1,4 +1,5 @@
 import datetime
+import os
 import requests
 from nba.models import Team, Player, Game, GameStats
 
@@ -87,8 +88,9 @@ def run(season='2015-16'):
             'Season': season,
             'SeasonType': 'Regular Season'
         }
+        HEADERS = { 'user-agent': os.environ['USER_AGENT'] }
 
-        response = requests.get(URL, params=PARAMS)
+        response = requests.get(URL, params=PARAMS, headers=HEADERS)
         for game_data in response.json()['resultSets'][0]['rowSet']:
             season_id, player_id, game_id, date, matchup, _, minutes, fgm, \
                 fga, _, fg3m, fg3a, _, ftm, fta, _, oreb, dreb, reb, ast, \

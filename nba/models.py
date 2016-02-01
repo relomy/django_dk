@@ -12,6 +12,7 @@ DK_NBA_PLAYER_NAME_MAP = {
     u'Cristiano Felício': 'Cristiano Felicio',
     u'Kevin Martín': 'Kevin Martin',
     u'André Miller': 'Andre Miller',
+    u'Danté Exum': 'Dante Exum',
 }
 
 # Create your models here.

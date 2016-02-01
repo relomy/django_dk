@@ -48,16 +48,22 @@ def find_new_contests():
     Maybe this belongs in another module
     """
 
-    def get_largest_contest(contests, entry_fee):
-        return sorted([c for c in contests if c['a'] == entry_fee],
-                      key=lambda x: x['m'],
-                      reverse=True)[0]
-
     def get_pst_from_timestamp(timestamp_str):
         timestamp = float(re.findall('[^\d]*(\d+)[^\d]*', timestamp_str)[0])
         return datetime.datetime.fromtimestamp(
             timestamp / 1000, timezone('America/Los_Angeles')
         )
+
+    def get_largest_contest(contests, entry_fee):
+        return sorted([c for c in contests if c['a'] == entry_fee],
+                      key=lambda x: x['m'],
+                      reverse=True)[0]
+
+    def get_contests_by_entries(contests, entry_fee, limit):
+        return sorted([c for c in contests
+                       if c['a'] == entry_fee and c['m'] > limit],
+                      key=lambda x: x['m'],
+                      reverse=True)
 
     URL = 'https://www.draftkings.com/lobby/getcontests?sport=NBA'
     HEADERS = { 'cookie': os.environ['DK_AUTH_COOKIES'] }
@@ -67,7 +73,7 @@ def find_new_contests():
         get_largest_contest(response['Contests'], 3),
         get_largest_contest(response['Contests'], 0.25),
         get_largest_contest(response['Contests'], 27)
-    ]
+    ] + get_contests_by_entries(response['Contests'], 3, 50000)
     for contest in contests:
         date_time = get_pst_from_timestamp(contest['sd'])
         DKContest.objects.update_or_create(dk_id=contest['id'], defaults={
@@ -82,21 +88,25 @@ def find_new_contests():
 def write_salaries_to_db(input_rows, date=datetime.date.today()):
     return_rows = []
     csvreader = reader(input_rows, delimiter=',', quotechar='"')
-    for i, row in enumerate(csvreader):
-        if i != 0 and len(row) == 6: # Ignore possible empty rows
-            pos, name, salary, game, ppg, team = row
-            player = Player.get_by_name(name)
-            dksalary, _ = DKSalary.objects.get_or_create(
-                player=player,
-                date=date,
-                defaults={ 'salary': int(salary) }
-            )
-            player.dk_position = pos
-            player.save()
-            if dksalary.salary != int(salary):
-                print ('Warning: trying to overwrite salary for %s.'
-                       ' Ignoring - did not overwrite' % player)
-            return_rows.append(row)
+    try:
+        for i, row in enumerate(csvreader):
+            if i != 0 and len(row) == 6: # Ignore possible empty rows
+                pos, name, salary, game, ppg, team = row
+                player = Player.get_by_name(name)
+                dksalary, _ = DKSalary.objects.get_or_create(
+                    player=player,
+                    date=date,
+                    defaults={ 'salary': int(salary) }
+                )
+                player.dk_position = pos
+                player.save()
+                if dksalary.salary != int(salary):
+                    print ('Warning: trying to overwrite salary for %s.'
+                           ' Ignoring - did not overwrite' % player)
+                return_rows.append(row)
+    except UnicodeEncodeError as e:
+        print e
+        return []
     return return_rows
 
 def dump_csvs():
@@ -160,15 +170,19 @@ def run(writecsv=True):
     HEADERS = { 'cookie': os.environ['DK_AUTH_COOKIES'] }
 
     response = requests.get(URL, headers=HEADERS).json()
-    rows = []
-    # dg['StartDateEst'] should be mostly the same for draft groups, (might not
-    # be the same for the rare long-running contest) and should be the date
-    # we're looking for (game date in US time).
-    date = get_salary_date(response['DraftGroups'])
+    rows_by_date = {}
     for dg in response['DraftGroups']:
+        # dg['StartDateEst'] should be mostly the same for draft groups, (might
+        # not be the same for the rare long-running contest) and should be the
+        # date we're looking for (game date in US time).
+        date = get_salary_date(response['DraftGroups'])
         print ('Updating salaries for draft group %d, contest type %d, date %s'
                % (dg['DraftGroupId'], dg['ContestTypeId'], date))
-        rows += get_salary_csv(dg['DraftGroupId'], dg['ContestTypeId'], date)
+        row = get_salary_csv(dg['DraftGroupId'], dg['ContestTypeId'], date)
+        if date not in rows_by_date:
+            rows_by_date[date] = []
+        rows_by_date[date] += row
     if writecsv:
-        write_csv(rows, date)
+        for date, rows in rows_by_date.iteritems():
+            write_csv(rows, date)
 

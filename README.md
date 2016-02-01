@@ -2,6 +2,21 @@
 
 #Queries
 
+* Contests + result counts
+```
+SELECT c.*, COUNT(p.payout) AS payouts, rcount.count AS contestants
+FROM nba_dkcontest AS c JOIN
+    (
+    SELECT c.id AS cid, COUNT(r.id) AS count
+    FROM nba_dkcontest AS c LEFT JOIN nba_dkresult AS r ON c.id=r.contest_id
+    GROUP BY c.id
+    ) AS rcount
+    ON c.id=rcount.cid
+LEFT JOIN nba_dkcontestpayout AS p ON c.id=p.contest_id
+GROUP BY c.id, rcount.count
+ORDER BY c.date DESC;
+```
+
 * Stats
 
 ```

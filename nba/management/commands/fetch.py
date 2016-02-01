@@ -24,6 +24,12 @@ $ python manage.py fetch
             help=('Fetch player data from NBA.com'
                   ' (curr for current season)')
         )
+        parser.add_argument('--player-name', '-pname',
+            action='store',
+            dest='player_name',
+            default=False,
+            help='Fetch player data from NBA.com for an individual player'
+        )
         parser.add_argument('--games', '-g',
             action='store',
             dest='games',
@@ -97,19 +103,28 @@ $ python manage.py fetch
     def handle(self, *args, **options):
         if options['update']:
             dksalaries_parser.find_new_contests()
-            game_parser.run('2015-16')
             injury_parser.run()
             dksalaries_parser.run()
             dkresults_parser.run(
                 contest_ids=get_empty_contest_ids(),
                 contest=True, resultscsv=True, resultsparse=True
             )
+            #game_parser.run('2015-16')
         else:
             if options['players']:
+                player_name = options['player_name']
                 if options['players'] == 'curr':
-                    player_parser.run(self.CURR_SEASON)
+                    if player_name:
+                        player_parser.run(season=self.CURR_SEASON,
+                                          player_name=player_name)
+                    else:
+                        player_parser.run(self.CURR_SEASON)
                 else:
-                    player_parser.run(options['players'])
+                    if player_name:
+                        player_parser.run(season=options['players'],
+                                          player_name=player_name)
+                    else:
+                        player_parser.run(options['players'])
             if options['games']:
                 if options['games'] == 'curr':
                     game_parser.run(self.CURR_SEASON)

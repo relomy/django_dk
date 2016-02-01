@@ -1,10 +1,11 @@
 import datetime
+import os
 import requests
 from nba.models import Team, Player
 
-def run(season='2015-16'):
+def run(season='2015-16', player_name=None):
 
-    def parse_players():
+    def parse_players(player_name=None):
         """
         Format: {
             "resource": "commonallplayers",
@@ -40,24 +41,37 @@ def run(season='2015-16'):
         http://stats.nba.com/stats/commonallplayers
             ?IsOnlyCurrentSeason=1&LeagueID=00&Season=2015-16
         """
-        URL = 'http://stats.nba.com/stats/commonallplayers'
-        PARAMS = {
-            'IsOnlyCurrentSeason': 1,
-            'LeagueID': '00',
-            'Season': season
-        }
 
-        response = requests.get(URL, params=PARAMS)
+        def parse_player_name(display_name):
+            """'[Last], [First]' -> '[First] [Last]'"""
+            name_arr = [x.strip() for x in display_name.split(',')]
+            last, first = name_arr[0], name_arr[1:]
+            return '%s %s' % (' '.join(first), last)
+
+        URL = 'http://stats.nba.com/stats/commonallplayers'
+        # 1/25/2016 - NBA.com now requires ordered params
+        PARAMS = (
+            ('IsOnlyCurrentSeason', 1),
+            ('LeagueID', '00'),
+            ('Season', season),
+        )
+        HEADERS = { 'user-agent': os.environ['USER_AGENT'] }
+
+        response = requests.get(URL, params=PARAMS, headers=HEADERS)
         player_ids = []
         for player_data in response.json()['resultSets'][0]['rowSet']:
-            player_id, _, _, _, _, _, team_id, team_city, team_name, \
-                team_abbr, _, _ = player_data
+            player_id, display_name, _, _, _, _, team_id, team_city, \
+                team_name, team_abbr, _, _ = player_data
             Team.objects.update_or_create(nba_id=str(team_id), defaults={
                 'name': team_name,
                 'abbr': team_abbr,
                 'city': team_city
             })
-            player_ids.append(player_id)
+            if player_name:
+                if parse_player_name(display_name) == player_name:
+                    player_ids.append(player_id)
+            else:
+                player_ids.append(player_id)
         return player_ids
 
     def parse_player(player_id):
@@ -131,13 +145,15 @@ def run(season='2015-16'):
             return datetime.datetime.strptime(d, '%Y-%m-%dT%H:%M:%S').date()
 
         URL = 'http://stats.nba.com/stats/commonplayerinfo'
-        PARAMS = {
-            'PlayerID': player_id,
-            'LeagueID': '00',
-            'SeasonType': 'Regular Season'
-        }
+        # 1/25/2016 - NBA.com now requires ordered params
+        PARAMS = (
+            ('LeagueID', '00'),
+            ('PlayerID', player_id),
+            ('SeasonType', 'Regular Season'),
+        )
+        HEADERS = { 'user-agent': os.environ['USER_AGENT'] }
 
-        response = requests.get(URL, params=PARAMS)
+        response = requests.get(URL, params=PARAMS, headers=HEADERS)
         player_data = response.json()['resultSets'][0]['rowSet'][0]
         player_id, first_name, last_name, _, _, _, birthdate, school, \
             country, _, height, weight, seasons, number, position, _, \
@@ -159,6 +175,7 @@ def run(season='2015-16'):
         })
         print 'Updated %s' % p
 
-    player_ids = parse_players()
+    # player_name=None by default, which gets all player ids
+    player_ids = parse_players(player_name=player_name)
     for player_id in player_ids:
         parse_player(player_id)

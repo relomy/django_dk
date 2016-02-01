@@ -15,7 +15,7 @@ def get_date_yearless(datestr):
     year = datetime.date.today().year
     date = date.replace(year=year)
     return (date if date <= datetime.date.today()
-            else datetime.date(year-1, month, int(day)))
+            else datetime.date(year-1, date.month, date.day))
 
 def get_contest_ids_from_readme(limit=0, until=None, filter_sharpshooter=False):
     """
