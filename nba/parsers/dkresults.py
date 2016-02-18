@@ -30,7 +30,20 @@ def run(contest_ids=[], contest=True, resultscsv=True, resultsparse=True):
             return get_date_yearless(datestr.split(',')[0])
 
         URL = 'https://www.draftkings.com/contest/gamecenter/%s' % contest_id
-        HEADERS = { 'cookie': os.environ['DK_AUTH_COOKIES'] }
+        HEADERS = {
+            'Accept': '*/*',
+            'Accept-Encoding': 'gzip, deflate, sdch',
+            'Accept-Language': 'en-US,en;q=0.8',
+            'Cache-Control': 'no-cache',
+            'Connection': 'keep-alive',
+            'Cookie': os.environ['DK_AUTH_COOKIES'],
+            'Host': 'www.draftkings.com',
+            'Pragma': 'no-cache',
+            'User-Agent': ('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_5) '
+                           'AppleWebKit/537.36 (KHTML, like Gecko) '
+                           'Chrome/48.0.2564.97 Safari/537.36'),
+            'X-Requested-With': 'XMLHttpRequest'
+        }
 
         response = requests.get(URL, headers=HEADERS)
         soup = BeautifulSoup(response.text, 'html5lib')
@@ -66,7 +79,20 @@ def run(contest_ids=[], contest=True, resultscsv=True, resultsparse=True):
             return int(re.findall(r'\d+', s)[0])
 
         URL = 'https://www.draftkings.com/contest/detailspop'
-        HEADERS = { 'cookie': os.environ['DK_AUTH_COOKIES'] }
+        HEADERS = {
+            'Accept': '*/*',
+            'Accept-Encoding': 'gzip, deflate, sdch',
+            'Accept-Language': 'en-US,en;q=0.8',
+            'Cache-Control': 'no-cache',
+            'Connection': 'keep-alive',
+            'Cookie': os.environ['DK_AUTH_COOKIES'],
+            'Host': 'www.draftkings.com',
+            'Pragma': 'no-cache',
+            'User-Agent': ('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_5) '
+                           'AppleWebKit/537.36 (KHTML, like Gecko) '
+                           'Chrome/48.0.2564.97 Safari/537.36'),
+            'X-Requested-With': 'XMLHttpRequest'
+        }
         PARAMS = {
             'contestId': contest_id,
             'showDraftButton': False,
@@ -100,8 +126,19 @@ def run(contest_ids=[], contest=True, resultscsv=True, resultsparse=True):
     def get_contest_result_data(contest_id):
         url = 'https://www.draftkings.com/contest/gamecenter/%s' % contest_id
         HEADERS = {
-            'referer': url,
-            'cookie': os.environ['DK_AUTH_COOKIES']
+            'Accept': '*/*',
+            'Accept-Encoding': 'gzip, deflate, sdch',
+            'Accept-Language': 'en-US,en;q=0.8',
+            'Cache-Control': 'no-cache',
+            'Connection': 'keep-alive',
+            'Cookie': os.environ['DK_AUTH_COOKIES'],
+            'Host': 'www.draftkings.com',
+            'Pragma': 'no-cache',
+            'User-Agent': ('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_5) '
+                           'AppleWebKit/537.36 (KHTML, like Gecko) '
+                           'Chrome/48.0.2564.97 Safari/537.36'),
+            'X-Requested-With': 'XMLHttpRequest',
+            'referer': url
         }
 
         OUTFILE = 'out.zip'
