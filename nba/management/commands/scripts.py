@@ -66,6 +66,12 @@ $ python manage.py scripts
             default=False,
             help='Create a score mapping'
         )
+        parser.add_argument('--score-linear-regression', '-slr',
+            action='store_true',
+            dest='score_linear_regression',
+            default=False,
+            help='Create a score mapping using linear regression'
+        )
         parser.add_argument('--lineup', '-l',
             action='store_true',
             dest='lineup',
@@ -132,3 +138,7 @@ $ python manage.py scripts
             elif options['score_points_per_salary']:
                 validation_scripts.run(score_scripts.median_points_per_salary,
                                        lineup_scripts.generate)
+            elif options['score_linear_regression']:
+                validation_scripts.run(score_scripts.linear_regression,
+                                       lineup_scripts.generate)
+

@@ -60,7 +60,7 @@ def run(season='2015-16', player_name=None):
         response = requests.get(URL, params=PARAMS, headers=HEADERS)
         player_ids = []
         for player_data in response.json()['resultSets'][0]['rowSet']:
-            player_id, display_name, _, _, _, _, team_id, team_city, \
+            player_id, display_name, _, _, _, _, _, team_id, team_city, \
                 team_name, team_abbr, _, _ = player_data
             Team.objects.update_or_create(nba_id=str(team_id), defaults={
                 'name': team_name,

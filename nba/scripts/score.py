@@ -4,6 +4,7 @@ Scoring models
 
 import datetime
 import numpy
+from sklearn import linear_model
 from nba.models import Player, DKContest
 
 def get_contests(from_date, days_back):
@@ -31,3 +32,16 @@ def median_points_per_salary(date=datetime.date.today()):
         if len(scorelist) >= min_games_played
     }
 
+def linear_regression(date=datetime.date.today()):
+    contests = get_contests(date, 30)
+    for player in Player.objects.all().order_by('id'):
+        player_vec = []
+        for contest in contests:
+            date = contest.date
+            salary = player.get_salary(date)
+            points = player.get_dkpoints(date)
+            player_vec.append(salary if salary else 2900)
+            player_vec.append(points if points else 0.0)
+        print player.id, player_vec
+    #linear_model.LinearRegression()
+    return {}

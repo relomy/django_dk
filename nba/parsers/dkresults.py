@@ -1,4 +1,5 @@
 from csv import reader
+import datetime
 import decimal
 import os
 import re
@@ -25,9 +26,17 @@ def run(contest_ids=[], contest=True, resultscsv=True, resultsparse=True):
             """
             @param datestr [str]: "MON DD, H:MM PM EST"
                                   (e.g. "NOV 29, 6:00 PM EST")
+                                  "MM/DD H:MM PM EST"
+                                  (e.g. "02/18 7:00 PM EST")
             @return [datetime.date]
             """
-            return get_date_yearless(datestr.split(',')[0])
+            if ',' in datestr:
+                return get_date_yearless(datestr.split(',')[0])
+            else:
+                datenum = datestr.split(' ')[0]
+                month, day = [int(s) for s in datenum.split('/')]
+                monthstr = datetime.date(1900, month, 1).strftime('%b')
+                return get_date_yearless('%s %s' % (monthstr, day))
 
         URL = 'https://www.draftkings.com/contest/gamecenter/%s' % contest_id
         HEADERS = {

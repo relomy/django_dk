@@ -57,6 +57,56 @@ ORDER BY c.dk_id, r.rank, r.id
         filtered = [row[1] for row in rows_agg if row[2] == i]
         print '%d\t%.3f\t%d' % (i, sum(filtered) / len(filtered), len(filtered))
 
+def find_top_contestants():
+    """
+    Used to see the most consistently high scoring contestants.
+
+    Prints the following table:
+    # Contests entered | Avg % Rank | # People
+    """
+
+    QUERY = '''
+SELECT r.name, r.rank, c.dk_id, c.entries
+FROM nba_dkcontest AS c JOIN nba_dkresult AS r ON c.id=r.contest_id
+ORDER BY c.dk_id, r.rank, r.id
+'''
+
+    contests = set([])
+
+    print 'Executing SQL...'
+    cursor = connection.cursor()
+    cursor.execute(QUERY)
+    rows = [row for row in cursor.fetchall()]
+
+    print 'Collecting data'
+    results = {}
+    for row in rows:
+        name, rank, contest_id, num_entries = row
+        percent = float(row[1]) / num_entries
+        if name in results:
+            results[name].append((percent, contest_id))
+        else:
+            results[name] = [(percent, contest_id)]
+
+    print 'Aggregating data'
+    results_agg = {}
+    for key, val in results.iteritems():
+        contestant_contests = set([x[1] for x in val])
+        avg = sum([x[0] for x in val]) / len(val)
+        num_contests = len(contestant_contests)
+        num_entries = len(val)
+        results_agg[key] = (avg, num_contests, num_entries)
+        contests = contests.union(contestant_contests)
+
+    rows_agg = sorted(
+        [(k, v[0], v[1], v[2]) for k, v in results_agg.iteritems()],
+        key=lambda x: x[1]
+    )
+
+    print 'Printing results'
+    for i in range(1, len(contests)+1):
+        filtered = [row[1] for row in rows_agg if row[2] == i]
+        print '%d\t%.3f\t%d' % (i, sum(filtered) / len(filtered), len(filtered))
 
 def print_player_ownerships(contest_id, percentile=20):
     """
