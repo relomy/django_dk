@@ -1,10 +1,11 @@
 """
-Gets games and lines from bookmaker.eu. As of 2017/01/04, does not require
+Gets games and lines from betonline.ag. As of 2017/01/04, does not require
 authentication for either request (games or lines).
 """
 
 import re
 import requests
+from bs4 import BeautifulSoup
 from nba.models import Team
 from sportsbook.utils.odds import us_to_decimal
 from sportsbook.models import Odds
@@ -14,38 +15,43 @@ from sportsbook.models import Odds
 #############
 
 def construct_odds_request_data(game_id):
-    return ('{"prms":"gv_gmid=%s,gv_pst=1483556785687,gv_msgst=1483552131167'
-            ',gv_progst=1483556654687,gvmenu=1,gvmenu_stamp=1483556785860,'
-            'bs=1"}' % game_id)
+    #epoch = datetime.datetime(1970, 1, 1)
+    #dt = (datetime.datetime.utcnow() - epoch).total_seconds() * 1000
+    return ('{"prms":"gv_gmid=%s,gv_pst=1483646359097,gv_msgst=1483646359097'
+            ',gv_progst=1483646359097"}' % (game_id))
+
+SPORT_ID = 2 # Basketball
+LEAGUE_ID = 2 # NBA
 
 # Get all games
 GAMES = {
-    'url': 'https://livebetting.bookmaker.eu/ngwbet.aspx/gvFrameHtml',
+    'url': 'https://dgslivebetting.betonline.ag/ngwbet.aspx/ovFrameHtml',
     'headers': {
         'Pragma': 'no-cache',
-        'Origin': 'https://livebetting.bookmaker.eu',
+        'Origin': 'https://dgslivebetting.betonline.ag',
         'Accept-Encoding': 'gzip, deflate, br',
         'Accept-Language': 'en-US,en;q=0.8',
         'User-Agent': ('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_5)'
                        ' AppleWebKit/537.36 (KHTML, like Gecko)'
                        ' Chrome/55.0.2883.95 Safari/537.36'),
-        'Content-Type': 'application/json; charset=UTF-8',
+        'Content-Type': 'application/json; charset=utf-8',
         'Accept': '*/*',
         'Cache-Control': 'no-cache',
         'X-Requested-With': 'XMLHttpRequest',
         'Connection': 'keep-alive',
-        'Referer': 'https://livebetting.bookmaker.eu/ngwbet.aspx',
+        'Referer': 'https://dgslivebetting.betonline.ag/ngwbet.aspx',
+        'Content-Length': '0',
     },
-    # You need to pass a valid gameID, but it seem to need to be current.
-    'data': '{"gameID":84040}'
+    'regex': (r'class="game" gid="(.+)" sportid="%d" leagueid="%d"'
+              % (SPORT_ID, LEAGUE_ID))
 }
 
 # Get odds for a single game
 ODDS = {
-    'url': 'https://livebetting.bookmaker.eu/refresh.aspx/Refresh',
+    'url': 'https://dgslivebetting.betonline.ag/refresh.aspx/Refresh',
     'headers': {
         'Pragma': 'no-cache',
-        'Origin': 'https://livebetting.bookmaker.eu',
+        'Origin': 'https://dgslivebetting.betonline.ag',
         'Accept-Encoding': 'gzip, deflate, br',
         'Accept-Language': 'en-US,en;q=0.8',
         'User-Agent': ('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_5)'
@@ -56,19 +62,10 @@ ODDS = {
         'Cache-Control': 'no-cache',
         'X-Requested-With': 'XMLHttpRequest',
         'Connection': 'keep-alive',
-        'Referer': 'https://livebetting.bookmaker.eu/ngwbet.aspx',
+        'Referer': 'https://dgslivebetting.betonline.ag/ngwbet.aspx',
     },
-    'data': construct_odds_request_data,
-    'regex': {
-        'title': u'<div class="propTitle"><span>(.+)</span>',
-        'teams': u'<div class="propText">(.+)</div>',
-        'odds': u'<div class="odds">(.+?)<img'
-    }
+    'data': construct_odds_request_data
 }
-
-# Maximum odds to consider - otherwise, betting might be frozen (when betting
-# freezes, the odds explode to a very large number).
-ODDS_LIMIT = 9000
 
 ###########
 # Helpers #
@@ -88,23 +85,10 @@ def get_games():
     """
     Sample response:
     { 'd': {
-        'games': [{
-            'gameStat': 2,
-            'sportName': 'Basketball',
-            'gameID': 84039,
-            'leagueOrder': 1,
-            'title': 'Milwaukee Bucks at New York Knicks',
-            'tv': True,
-            'fav': False,
-            'leagueName': 'NBA',
-            'startTime': '4:30 PM',
-            'leagueID': 2,
-            'brMatchID': 9955431,
-            'sportID': 2,
-            'sportOrder': 2,
-            'stamp': -62135596800000
-        }, ...],
-        'html': [str],
+        'html': '"\r\n\r\n\u003cdiv id=\"ovFrame\"...',
+        'maxGameStamp': 1483635396433,
+        'maxPropStamp': 1483635668440,
+        'maxScoreStamp': 1483635681210,
         ...
     }}
 
@@ -113,20 +97,17 @@ def get_games():
     Returns:
         [list]: List of game ids to monitor: ['90001', '90002', ...]
     """
-    response = requests.post(GAMES['url'], headers=GAMES['headers'],
-                             data=GAMES['data'])
+    response = requests.post(GAMES['url'], headers=GAMES['headers'])
     if response.status_code == 200:
         try:
-            games = response.json()['d']['games']
-            # Filter for NBA for now
-            return [game['gameID'] for game in games
-                    if game['leagueName'] == 'NBA']
+            games_html = response.json()['d']['html']
+            return re.findall(GAMES['regex'], games_html)
         except KeyError:
-            print ('[WARNING/bookmaker.get_games()]: Unable to parse response'
+            print ('[WARNING/betonline.get_games()]: Unable to parse response'
                    ' json.')
             return []
     else:
-        print '[WARNING/bookmaker.get_games()]: Error calling endpoint.'
+        print '[WARNING/betonline.get_games()]: Error calling endpoint.'
         return []
 
 def get_moneyline(game_id):
@@ -134,13 +115,13 @@ def get_moneyline(game_id):
     Sample response:
     { 'd': {
         'gvProps': [{
-            'gameID': 84040,
-            'propID': 3570884,
+            'gameID': 70014,
+            'propID': 2873560,
             'nPropStatus': 1,
             'mainPropSlot': 0,
-            'stamp': 1483556933237,
+            'stamp': 1483644838637,
             'html': "\r\n\r\n\u003c!-- Begin ~/Skin/{0}/Content/gvGameProp.ascx
-                     --\u003e\r\n\u003cdiv class=\"gvProp\"pid=\u00273570884
+                     --\u003e\r\n\u003cdiv class=\"gvProp\"pid=\u00272873560
                      \u0027 order=\u002710\u0027\u003e\r\n...""
         }, ...],
         'html': [str],
@@ -159,26 +140,23 @@ def get_moneyline(game_id):
     def is_moneyline(html):
         # Take the first group, which is the value of propTitle
         if html:
-            match = re.search(ODDS['regex']['title'], html)
-            return match and match.group(1) == 'Winner Match'
+            soup = BeautifulSoup(html, 'html5lib')
+            title = soup.find_all(class_='propTitle')
+            return title and title[0] and title[0].string == 'Moneyline'
         return False
 
     def get_odds(html):
         try:
-            team1, team2 = re.findall(ODDS['regex']['teams'], html)
-            odds1, odds2 = re.findall(ODDS['regex']['odds'], html,
-                                      flags=re.DOTALL)
+            soup = BeautifulSoup(html, 'html5lib')
+            team1, team2 = [node.string for node in soup.find_all(class_='name')]
+            odds1, odds2 = [node.string for node in soup.find_all(class_='odds')]
             team1, team2 = (normalize_team(team1), normalize_team(team2))
             odds1, odds2 = (normalize_odds(odds1), normalize_odds(odds2))
             # Sort by team id
-            return sorted(
-                ((team1, odds1), (team2, odds2))
-                if abs(odds1) < ODDS_LIMIT and abs(odds2) < ODDS_LIMIT
-                else None,
-                key=lambda x: x[0].id
-            )
+            return sorted(((team1, odds1), (team2, odds2)),
+                          key=lambda x: x[0].id)
         except ValueError:
-            print '[WARNING/bookmaker.get_odds()]: Unable to parse odds HTML.'
+            print '[WARNING/betonline.get_odds()]: Unable to parse odds HTML.'
             return None
 
     response = requests.post(ODDS['url'], headers=ODDS['headers'],
@@ -191,16 +169,16 @@ def get_moneyline(game_id):
             if len(odds) == 1:
                 return odds[0]
             else:
-                print ('[WARNING/bookmaker.get_moneyline()]: Found %d open'
+                print ('[WARNING/betonline.get_moneyline()]: Found %d open'
                        ' moneyline bets for %s, expected 1.'
                        % (len(odds), game_id))
                 return None
         except KeyError:
-            print ('[WARNING/bookmaker.get_moneyline()]: Unable to parse'
+            print ('[WARNING/betonline.get_moneyline()]: Unable to parse'
                    ' response json.')
             return None
     else:
-        print '[WARNING/bookmaker.get_moneyline()]: Error calling endpoint.'
+        print '[WARNING/betonline.get_moneyline()]: Error calling endpoint.'
         return None
 
 def run_moneyline():

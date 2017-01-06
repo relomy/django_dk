@@ -30,6 +30,22 @@ class Team(models.Model):
     def full_name(self):
         return '%s %s' % (self.city, self.name)
 
+    @classmethod
+    def get_by_name(cls, s):
+        s = s.upper()
+        teams = {
+            (t.name.upper(), t.city.upper(), t.abbr.upper()): t
+            for t in Team.objects.all()
+        }
+        for k, team in teams.iteritems():
+            name, city, abbr = k
+            if s == name or s == city or s == abbr:
+                return team
+            if city in s and name in s:
+                return team
+        print '[WARNING/Team] Could not resolve team name: %s' % s
+        return None
+
     def __unicode__(self):
         return self.full_name
 
