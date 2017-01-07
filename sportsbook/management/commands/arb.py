@@ -37,31 +37,6 @@ def match_odds(list1, list2):
                 ))
     return results
 
-def dump_moneyline(site):
-    """
-    Args:
-        site [str]: Website the odds data is from
-    Returns:
-        None
-    """
-    for line in run_moneyline():
-        ((t_a, o_a), (t_b, o_b)) = line
-        ((t1, o1), (t2, o2)) = sorted(((t_a, o_a), (t_b, o_b)),
-                                      key=lambda x: x[0].id)
-        gamestr = Team.get_gamestr(t1, t2)
-        Odds.update_or_create(
-            site=site,
-            type='MONEYLINE',
-            timestamp=datetime.datetime.now(),
-            game=gamestr,
-            team1=t1,
-            team2=t2,
-            defaults={
-                'odds1': o1,
-                'odds2': o2
-            }
-        )
-
 class Command(BaseCommand):
 
     def handle(self, *args, **options):

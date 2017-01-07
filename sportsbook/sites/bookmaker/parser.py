@@ -5,6 +5,7 @@ authentication for either request (games or lines).
 
 import re
 import requests
+from multiprocessing import Pool
 from nba.models import Team
 from sportsbook.utils.odds import us_to_decimal
 from sportsbook.models import Odds
@@ -203,10 +204,11 @@ def get_moneyline(game_id):
         print '[WARNING/bookmaker.get_moneyline()]: Error calling endpoint.'
         return None
 
-def run_moneyline():
+def run_moneyline(parallel=False, max_processes=10):
     """
     Args:
-        None
+        parallel [bool]: Whether to get moneylines in parallel.
+        processes [int]: Maximum number of concurrent processes to run.
     Returns:
         [list]: List of moneyline odds: [
             ((<Team: Sacramento Kings>, 1.2), (<Team: Miami Heat>, 3.5)),
@@ -214,6 +216,13 @@ def run_moneyline():
             ...
         ]
     """
-    return filter(lambda x: x is not None,
-                  [get_moneyline(game_id) for game_id in get_games()])
+    if parallel:
+        game_ids = get_games()
+        pool = Pool(processes=min(len(game_ids), max_processes))
+        results = pool.map(get_moneyline, game_ids)
+        results = [result for result in results if result is not None]
+        return results
+    else:
+        return filter(lambda x: x is not None,
+                      [get_moneyline(game_id) for game_id in get_games()])
 
