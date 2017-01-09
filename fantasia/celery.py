@@ -5,9 +5,9 @@ from celery import Celery
 from celery.schedules import crontab
 
 # set the default Django settings module for the 'celery' program.
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'proj.settings')
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'fantasia.settings')
 
-app = Celery('proj')
+app = Celery('fantasia')
 
 # Using a string here means the worker don't have to serialize
 # the configuration object to child processes.
@@ -28,7 +28,6 @@ def debug_task(self):
 TASK_SCHEDULE = {
     'pull_moneylines': {
         'task': 'sportsbook.tasks.pull_moneylines',
-        'schedule': timedelta(minutes=1)
         # Every minute between 4PM and 10PM
         'schedule': crontab(hour='16,17,18,19,20,21', minute='*')
     },

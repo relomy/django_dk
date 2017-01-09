@@ -21,13 +21,19 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # See https://docs.djangoproject.com/en/1.8/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = '4sigeu$36j(fv4ca)_durac(l0(^5%r-=%tkg&+2zg^kixe(m5'
+SECRET_KEY = os.environ['SECRET_KEY']
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+# Development settings:
+if os.environ['ENVIRONMENT'] == 'development':
+    DEBUG = True
+# Production settings:
+else:
+    DEBUG = False
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
 
 ALLOWED_HOSTS = []
-
 
 # Application definition
 
@@ -67,6 +73,7 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
             ],
+            'debug': DEBUG,
         },
     },
 ]
@@ -79,6 +86,22 @@ WSGI_APPLICATION = 'fantasia.wsgi.application'
 
 DATABASES = {}
 DATABASES['default'] =  dj_database_url.config()
+
+# Celery
+CELERY_BROKER_URL = os.environ['RMQ_BROKER_URL']
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+#CELERY_RESULT_BACKEND='djcelery.backends.database:DatabaseBackend'
+CELERY_TIMEZONE = 'US/Pacific' # Used for job scheduling
+# Recommended settings from: https://www.cloudamqp.com/docs/celery.html
+CELERY_BROKER_POOL_LIMIT = 1 # Will decrease connection usage
+CELERY_BROKER_HEARTBEAT = None # We're using TCP keep-alive instead
+CELERY_BROKER_CONNECTION_TIMEOUT = 30 # May require a long timeout due to Linux DNS
+                                      # timeouts etc
+CELERY_SEND_EVENTS = False # Will not create celeryev.* queues
+CELERY_EVENT_QUEUE_EXPIRES = 60 # Will delete all celeryev. queues without
+                                # consumers after 1 minute.
 
 # Internationalization
 # https://docs.djangoproject.com/en/1.8/topics/i18n/
@@ -97,4 +120,5 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/1.8/howto/static-files/
 
+STATIC_ROOT = 'staticfiles'
 STATIC_URL = '/static/'

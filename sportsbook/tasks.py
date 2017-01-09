@@ -8,11 +8,6 @@ from sportsbook.models import Odds
 from sportsbook.sites.bookmaker.parser import run_moneyline as bm_run_moneyline
 from sportsbook.sites.betonline.parser import run_moneyline as bo_run_moneyline
 
-def active_games(
-    """
-    Checks whether the game is within 4:30-10PM PST.
-    """
-
 def dump_moneyline(site, f_moneyline, parallel=False):
     """
     Args:
@@ -44,6 +39,7 @@ def dump_moneyline(site, f_moneyline, parallel=False):
 @shared_task
 def pull_moneylines():
     try:
+        print '[INFO/tasks.pull_moneylines] Starting task'
         dump_moneyline('BOOKMAKER', bm_run_moneyline, True)
         dump_moneyline('BETONLINE', bo_run_moneyline, True)
         # TODO: Figure out how to do nested pools
@@ -56,3 +52,5 @@ def pull_moneylines():
         """
     except Exception, e:
         print '[ERROR/tasks.pull_moneylines]: %s' % e
+    finally:
+        print '[INFO/tasks.pull_moneylines] Successfully exited task'
