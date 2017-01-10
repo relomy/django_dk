@@ -34,3 +34,20 @@ def calculate(site1, site2):
         return (2, s2o1 / (s1o2 + s2o1), s1o2 * s2o1 / (s1o2 + s2o1) - 1)
     else:
         return (0, 0.0, 0.0)
+
+def calculate_odds(odds1, odds2):
+    """
+    Args:
+        odds1 [Odds]: Odds object to compare.
+        odds2 [Odds]: Odds object to compare.
+    Returns:
+        [tuple]: ([int] 0 if no arb opportunity exists
+                        1 to back/back (s1o1/s2o2)
+                        2 to back/back (s1o2/s2o1),
+                  [float] percentage of the bet to allocate to odds1,
+                  [float] margin)
+    """
+    if (odds1.type != odds2.type or odds1.game != odds2.game
+        or odds1.team1 != odds2.team1 or odds1.team2 != odds2.team2):
+        return (0, 0.0, 0.0)
+    return calculate((odds1.odds1, odds1.odds2), (odds2.odds1, odds2.odds2))

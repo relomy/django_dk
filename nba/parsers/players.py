@@ -157,7 +157,8 @@ def run(season='2015-16', player_name=None):
         player_data = response.json()['resultSets'][0]['rowSet'][0]
         player_id, first_name, last_name, _, _, _, birthdate, school, \
             country, _, height, weight, seasons, number, position, _, \
-            team_id, _, _, _, _, _, from_year, to_year, _, _ = player_data
+            team_id, _, _, _, _, _, from_year, to_year, _, _, _, _, _ \
+            = player_data
         print 'Updating %s' % player_id
         p, _ = Player.objects.update_or_create(nba_id=player_id, defaults={
             'first_name': first_name,

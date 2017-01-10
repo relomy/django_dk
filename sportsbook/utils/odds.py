@@ -47,20 +47,31 @@ def decimal_to_us(odds):
         return None
 
 def write_moneyline(odds, site):
-    ((t_a, o_a), (t_b, o_b)) = odds
-    ((t1, o1), (t2, o2)) = sorted(((t_a, o_a), (t_b, o_b)),
-                                  key=lambda x: x[0].id)
-    gamestr = Odds.get_gamestr(t1, t2)
-    o, _ = Odds.objects.update_or_create(
-        site=site,
-        type='MONEYLINE',
-        timestamp=timezone.now(),
-        game=gamestr,
-        team1=t1,
-        team2=t2,
-        defaults={
-            'odds1': o1,
-            'odds2': o2
-        }
-    )
-    print 'Updated %s' % o
+    """
+    Write a pair of odds from a site to the database.
+    Args:
+        odds [tuple]: ((Team1, Odds1), (Team2, Odds2)), where @Team is a Team
+                      object (e.g. <Team: Houston Rockets>) and @Odds is a
+                      European odds float (e.g. 1.4).
+        site [str]: Website key (e.g. BOOKMAKER).
+    Returns:
+        None
+    """
+    if odds:
+        ((t_a, o_a), (t_b, o_b)) = odds
+        ((t1, o1), (t2, o2)) = sorted(((t_a, o_a), (t_b, o_b)),
+                                      key=lambda x: x[0].id)
+        gamestr = Odds.get_gamestr(t1, t2)
+        o, _ = Odds.objects.update_or_create(
+            site=site,
+            type='MONEYLINE',
+            timestamp=timezone.now(),
+            game=gamestr,
+            team1=t1,
+            team2=t2,
+            defaults={
+                'odds1': o1,
+                'odds2': o2
+            }
+        )
+        print 'Updated %s' % o

@@ -79,7 +79,7 @@ def normalize_team(team_name):
     return Team.get_by_name(team_name)
 
 def normalize_odds(odds_str):
-    return us_to_decimal(int(odds_str.strip().replace(u'\u2212', '-')))
+    return sbo.us_to_decimal(int(odds_str.strip().replace(u'\u2212', '-')))
 
 ##########
 # Public #
@@ -137,9 +137,9 @@ def get_moneyline(game_id):
     Args:
         game_id [str]: Id of the game to get lines for.
     Returns:
-        [tuple]: Tuple of: ((Team1, Odds1), (Team2, Odds2)), where @Team is a
-                 Team object (e.g. <Team: Houston Rockets>) and @Odds is an
-                 int (e.g. -110).
+        [tuple]: ((Team1, Odds1), (Team2, Odds2)), where @Team is a Team object
+                 (e.g. <Team: Houston Rockets>) and @Odds is a European odds
+                 float (e.g. 1.4).
     """
     def is_moneyline(html):
         # Take the first group, which is the value of propTitle

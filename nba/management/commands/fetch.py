@@ -8,7 +8,7 @@ from django.core.management.base import BaseCommand, CommandError
 
 class Command(BaseCommand):
 
-    CURR_SEASON = '2015-16'
+    CURR_SEASON = '2016-17'
 
     help = \
 '''
