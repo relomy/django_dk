@@ -98,7 +98,7 @@ def get_moneyline(game_id):
     """
     return
 
-def run_moneyline():
+def run_moneylines():
     """
     Args:
         None
@@ -123,7 +123,7 @@ def dump_moneyline():
             ...
         ]
     """ 
-    for line in run_moneyline():
+    for line in run_moneylines():
         ((t_a, o_a), (t_b, o_b)) = line
         t_a, t_b = (Team.objects.get(name=t_a), Team.objects.get(name=t_b))
         ((t1, o1), (t2, o2)) = sorted(((t_a, o_a), (t_b, o_b)),

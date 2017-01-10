@@ -6,9 +6,10 @@ authentication for either request (games or lines).
 import re
 import requests
 from multiprocessing import Pool
+from celery import shared_task, group
 from bs4 import BeautifulSoup
 from nba.models import Team
-from sportsbook.utils.odds import us_to_decimal
+import sportsbook.utils.odds as sbo
 from sportsbook.models import Odds
 
 #############
@@ -20,6 +21,8 @@ def construct_odds_request_data(game_id):
     #dt = (datetime.datetime.utcnow() - epoch).total_seconds() * 1000
     return ('{"prms":"gv_gmid=%s,gv_pst=1483646359097,gv_msgst=1483646359097'
             ',gv_progst=1483646359097"}' % (game_id))
+
+SITE = 'BETONLINE'
 
 SPORT_ID = 2 # Basketball
 LEAGUE_ID = 2 # NBA
@@ -160,6 +163,9 @@ def get_moneyline(game_id):
             print '[WARNING/betonline.get_odds()]: Unable to parse odds HTML.'
             return None
 
+    if not game_id:
+        return
+
     response = requests.post(ODDS['url'], headers=ODDS['headers'],
                              data=ODDS['data'](game_id))
     if response.status_code == 200:
@@ -182,8 +188,23 @@ def get_moneyline(game_id):
         print '[WARNING/betonline.get_moneyline()]: Error calling endpoint.'
         return None
 
-def run_moneyline(parallel=False, max_processes=10):
+@shared_task
+def write_moneyline(game_id):
     """
+    Writes moneyline odds for a single game to the database.
+
+    Args:
+        game_id [str]: Id of the game to write to the database.
+    Returns:
+        None
+    """
+    sbo.write_moneyline(get_moneyline(game_id), 'BETONLINE')
+
+def run_moneylines(parallel=False, max_processes=10):
+    """
+    Do not run this in parallel with Celery. Instead, use get_games() and
+    get_moneyline() independently.
+
     Args:
         parallel [bool]: Whether to get moneylines in parallel.
         processes [int]: Maximum number of concurrent processes to run.
@@ -203,4 +224,19 @@ def run_moneyline(parallel=False, max_processes=10):
     else:
         return filter(lambda x: x is not None,
                       [get_moneyline(game_id) for game_id in get_games()])
+
+def write_moneylines(parallel=False):
+    """
+    Writes moneyline odds for all active games to the database.
+
+    Args:
+        parallel [bool]: Whether to get moneylines in parallel.
+    Returns:
+        None
+    """
+    game_ids = get_games()
+    if parallel:
+        group(write_moneyline.s(game_id) for game_id in game_ids if game_id)()
+    else:
+        [write_moneyline(game_id) for game_id in game_ids if game_id]
 

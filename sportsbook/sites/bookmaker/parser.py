@@ -6,8 +6,9 @@ authentication for either request (games or lines).
 import re
 import requests
 from multiprocessing import Pool
+from celery import shared_task, group
 from nba.models import Team
-from sportsbook.utils.odds import us_to_decimal
+import sportsbook.utils.odds as sbo
 from sportsbook.models import Odds
 
 #############
@@ -18,6 +19,8 @@ def construct_odds_request_data(game_id):
     return ('{"prms":"gv_gmid=%s,gv_pst=1483556785687,gv_msgst=1483552131167'
             ',gv_progst=1483556654687,gvmenu=1,gvmenu_stamp=1483556785860,'
             'bs=1"}' % game_id)
+
+SITE = 'BOOKMAKER'
 
 # Get all games
 GAMES = {
@@ -79,7 +82,7 @@ def normalize_team(team_name):
     return Team.get_by_name(team_name)
 
 def normalize_odds(odds_str):
-    return us_to_decimal(int(odds_str.strip().replace(u'\u2212', '-')))
+    return sbo.us_to_decimal(int(odds_str.strip().replace(u'\u2212', '-')))
 
 ##########
 # Public #
@@ -182,6 +185,9 @@ def get_moneyline(game_id):
             print '[WARNING/bookmaker.get_odds()]: Unable to parse odds HTML.'
             return None
 
+    if not game_id:
+        return
+
     response = requests.post(ODDS['url'], headers=ODDS['headers'],
                              data=ODDS['data'](game_id))
     if response.status_code == 200:
@@ -204,8 +210,23 @@ def get_moneyline(game_id):
         print '[WARNING/bookmaker.get_moneyline()]: Error calling endpoint.'
         return None
 
-def run_moneyline(parallel=False, max_processes=10):
+@shared_task
+def write_moneyline(game_id):
     """
+    Writes moneyline odds for a single game to the database.
+
+    Args:
+        game_id [str]: Id of the game to write to the database.
+    Returns:
+        None
+    """
+    sbo.write_moneyline(get_moneyline(game_id), 'BOOKMAKER')
+
+def run_moneylines(parallel=False, max_processes=10):
+    """
+    Do not run this in parallel with Celery. Instead, use get_games() and
+    get_moneyline() independently.
+
     Args:
         parallel [bool]: Whether to get moneylines in parallel.
         processes [int]: Maximum number of concurrent processes to run.
@@ -226,3 +247,17 @@ def run_moneyline(parallel=False, max_processes=10):
         return filter(lambda x: x is not None,
                       [get_moneyline(game_id) for game_id in get_games()])
 
+def write_moneylines(parallel=False):
+    """
+    Writes moneyline odds for all active games to the database.
+
+    Args:
+        parallel [bool]: Whether to get moneylines in parallel.
+    Returns:
+        None
+    """
+    game_ids = get_games()
+    if parallel:
+        group(write_moneyline.s(game_id) for game_id in game_ids if game_id)()
+    else:
+        [write_moneyline(game_id) for game_id in game_ids if game_id]

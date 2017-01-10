@@ -40,8 +40,8 @@ def match_odds(list1, list2):
 class Command(BaseCommand):
 
     def handle(self, *args, **options):
-        bookmaker_odds = bookmaker_parser.run_moneyline()
-        betonline_odds = betonline_parser.run_moneyline()
+        bookmaker_odds = bookmaker_parser.run_moneylines()
+        betonline_odds = betonline_parser.run_moneylines()
         odds_list = match_odds(bookmaker_odds, betonline_odds)
         for odds in odds_list:
             team1, t1s1, t1s2 = odds[0]

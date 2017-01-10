@@ -1,3 +1,7 @@
+from django.utils import timezone
+
+from sportsbook.models import Odds
+
 def us_to_decimal(odds):
     """
     Convert from US format odds (+110, -200, etc.) to decimal odds - the
@@ -41,3 +45,22 @@ def decimal_to_us(odds):
         return int(round(-100.0 / (odds - 1)))
     else:
         return None
+
+def write_moneyline(odds, site):
+    ((t_a, o_a), (t_b, o_b)) = odds
+    ((t1, o1), (t2, o2)) = sorted(((t_a, o_a), (t_b, o_b)),
+                                  key=lambda x: x[0].id)
+    gamestr = Odds.get_gamestr(t1, t2)
+    o, _ = Odds.objects.update_or_create(
+        site=site,
+        type='MONEYLINE',
+        timestamp=timezone.now(),
+        game=gamestr,
+        team1=t1,
+        team2=t2,
+        defaults={
+            'odds1': o1,
+            'odds2': o2
+        }
+    )
+    print 'Updated %s' % o
