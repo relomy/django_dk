@@ -17,9 +17,9 @@ def write_moneylines(site=''):
     try:
         print '[INFO/tasks.write_moneylines] Starting task.'
         if site == 'bookmaker':
-            bm_write_moneylines(parallel=True)
+            bm_write_moneylines(parallel=False)
         elif site == 'betonline':
-            bo_write_moneylines(parallel=True)
+            bo_write_moneylines(parallel=False)
         else:
             print ('[WARNING/tasks.write_moneylines]: No procedure defined for'
                    ' site %s.' % site)

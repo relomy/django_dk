@@ -1,7 +1,10 @@
 import datetime
 from django.db import models
+from django.db.models import Q
+from django.utils import timezone
 import nba.models as nba_models
 from sportsbook.algs import arb
+from sportsbook.utils.odds import decimal_to_us_str
 
 class Odds(models.Model):
     site = models.CharField(max_length=20)
@@ -23,9 +26,10 @@ class Odds(models.Model):
         unique_together = ('site', 'bet_type', 'bet_time', 'game')
 
     def __unicode__(self):
-        return ('%s %s @ %s: %s (%.2f) v %s (%.2f)'
+        return ('%s %s @ %s: %s (%.2f|%s) v %s (%.2f|%s)'
                 % (self.site, self.bet_type, self.bet_time, self.team1,
-                   self.odds1, self.team2, self.odds2))
+                   self.odds1, decimal_to_us_str(self.odds1), self.team2,
+                   self.odds2, decimal_to_us_str(self.odds2)))
 
     @classmethod
     def get_gamestr(cls, team1, team2):
@@ -45,6 +49,39 @@ class Odds(models.Model):
         """
         # Sort by internal id
         return sorted(teams, key=lambda x: x.id)
+
+    @classmethod
+    def write_moneyline(cls, odds, site):
+        """
+        Write a pair of odds from a site to the database.
+
+        Args:
+            odds [tuple]: ((Team1, Odds1), (Team2, Odds2)), where @Team is a
+                          Team object (e.g. <Team: Houston Rockets>) and @Odds
+                          is a European odds float (e.g. 1.4).
+            site [str]: Website key (e.g. BOOKMAKER).
+        Returns:
+            None
+        """
+        if odds:
+            ((t_a, o_a), (t_b, o_b)) = odds
+            ((t1, o1), (t2, o2)) = sorted(((t_a, o_a), (t_b, o_b)),
+                                          key=lambda x: x[0].id)
+            gamestr = Odds.get_gamestr(t1, t2)
+            o, _ = Odds.objects.update_or_create(
+                site=site,
+                bet_type='MONEYLINE',
+                bet_time=timezone.now(),
+                game=gamestr,
+                team1=t1,
+                team2=t2,
+                defaults={
+                    'odds1': o1,
+                    'odds2': o2
+                }
+            )
+            print 'Updated %s' % o
+            return o
 
     @classmethod
     def match_odds(cls, bet_time, bet_type, delta=60):
@@ -91,7 +128,7 @@ class Odds(models.Model):
             results.append(closest)
         return results
 
-    def arb(self, delta=60):
+    def write_arbs(self, delta=10):
         """
         Calculate the arb opportunities within the specified timeframe.
 
@@ -99,57 +136,30 @@ class Odds(models.Model):
             self [Odds]: Odds instance.
             delta [int]: Max timeframe to query, in seconds.
         Returns
-            [list]: List of arb opportunities in the format: [
-                {
-                    'site1': (site, team, odds, percentage),
-                    'site2': (site, team, odds, percentage),
-                    'margin': margin
-                }
-            ]
-            Where:
-                site: Name of the website
-                team: Team object to bet on
-                odds: Odds given for the team on the site
-                percentage: Percentage allocation to the bet for the team on
-                            the site
-                margin: Margin of return of the bet
-            E.g.: {
-                'site1': ('BOOKMAKER', <Team: Miami Heat>, 1.4, 0.736)
-                'site2': ('BETONLINE', <Team: Houston Rockets>, 3.9, 0.264),
-                'margin': 0.03
-            }
+            [list]: List of Arb instances that were written.
         """
-        results = []
+        arb_list = []
         closest_odds = self.match_odds(delta)
-        for other in closest_odds:
-            opt, percentage, margin = arb.calculate_odds(self, other)
-            if opt == 1:
-                print ('[%s] %s, %s: %.2f @ %.2f'
-                       % (self.bet_time, self.site, self.team1, percentage,
-                          self.odds1))
-                print ('[%s] %s, %s: %.2f @ %.2f'
-                       % (other.bet_time, other.site, other.team2,
-                          1-percentage, other.odds2))
-                print 'Margin: %2f' % margin
-                results.append({
-                    'site1': (self.site, self.team1, self.odds1, percentage),
-                    'site2': (other.site, other.team2, other.odds2, 1-percentage),
-                    'margin': margin
-                })
-            elif opt == 2:
-                print ('[%s] %s, %s: %.2f @ %.2f'
-                       % (self.bet_time, self.site, self.team2, percentage,
-                          self.odds2))
-                print ('[%s] %s, %s: %.2f @ %.2f'
-                       % (other.bet_time, other.site, other.team1,
-                          1-percentage, other.odds1))
-                print 'Margin: %2f' % margin
-                results.append({
-                    'site1': (self.site, self.team2, self.odds2, percentage),
-                    'site2': (other.site, other.team1, other.odds1, 1-percentage),
-                    'margin': margin
-                })
-        return results
+        for other_odds in closest_odds:
+            arb = Arb.write_arb(self, other_odds)
+            if arb:
+                arb_list.append(arb)
+        return arb_list
+
+    def get_arbs(self, delta=10, **kwargs):
+        """
+        Return the arb opportunities within the specified timeframe.
+
+        Args:
+            self [Odds]: Odds instance.
+            delta [int]: Max timeframe to query, in seconds.
+            kwargs [dict]: Other params to query on (e.g. margin).
+        Returns
+            [QuerySet]: List of Arb instances that fit the query criteria.
+        """
+        return (Arb.objects.filter(Q(odds1=self) | Q(odds2=self))
+                           .filter(delta__lte=datetime.timedelta(seconds=delta))
+                           .filter(**kwargs))
 
 class Arb(models.Model):
     OPTIONS = {
@@ -175,22 +185,26 @@ class Arb(models.Model):
 
     def __unicode__(self):
         if self.option == 1:
-            return ('[%s] %s, %s: %.2f @ %.2f\n'
-                    '[%s] %s, %s: %.2f @ %.2f\n'
-                    'Margin: %2f (%s interval)'
+            return ('[%s] %s, %s: %.2f @ %.2f|%s\n'
+                    '[%s] %s, %s: %.2f @ %.2f|%s\n'
+                    'Margin: %2f (Time interval: %s)'
                     % (self.odds1.bet_time, self.odds1.site, self.odds1.team1,
                        self.percentage, self.odds1.odds1,
+                       decimal_to_us_str(self.odds1.odds1),
                        self.odds2.bet_time, self.odds2.site, self.odds2.team2,
                        1-self.percentage, self.odds2.odds2,
+                       decimal_to_us_str(self.odds2.odds2),
                        self.margin, self.delta))
         elif self.option == 2:
-            return ('[%s] %s, %s: %.2f @ %.2f'
-                    '[%s] %s, %s: %.2f @ %.2f'
-                    'Margin: %2f (%s interval)'
+            return ('[%s] %s, %s: %.2f @ %.2f|%s\n'
+                    '[%s] %s, %s: %.2f @ %.2f|%s\n'
+                    'Margin: %2f (Time interval: %s)'
                     % (self.odds1.bet_time, self.odds1.site, self.odds1.team2,
                        self.percentage, self.odds1.odds2,
+                       decimal_to_us_str(self.odds1.odds2),
                        self.odds2.bet_time, self.odds2.site, self.odds2.team1,
                        1-self.percentage, self.odds2.odds1,
+                       decimal_to_us_str(self.odds2.odds1),
                        self.margin, self.delta))
         else:
             return 'Undefined Representation for Object'
@@ -209,4 +223,32 @@ class Arb(models.Model):
         """
         # Sort by internal id
         return sorted(odds, key=lambda x: x.bet_time)
+
+    @classmethod
+    def write_arb(cls, odds1, odds2):
+        """
+        Takes two unordered Odds objects, orders them by timestamp, calculates
+        if there is an arb opportunity. If so, writes it to the database.
+
+        Args:
+            odds1 [Odds]: Odds object.
+            odds2 [Odds]: Odds object.
+        Returns:
+            None
+        """
+        (odds1, odds2) = cls.order_odds((odds1, odds2))
+        option, percentage, margin = arb.calculate_odds(odds1, odds2)
+        if option in cls.OPTIONS.values() and margin > 0:
+            a, _ = cls.objects.update_or_create(
+                option=option,
+                odds1=odds1,
+                odds2=odds2,
+                defaults={
+                    'percentage': percentage,
+                    'margin': margin,
+                    'delta': odds2.bet_time - odds1.bet_time
+                }
+            )
+            print 'Updated %s' % a
+            return a
 

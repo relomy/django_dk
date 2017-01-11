@@ -1,8 +1,3 @@
-from django.utils import timezone
-
-from sportsbook.models import Odds, Arb
-from sportsbook.algs import arb
-
 def us_to_decimal(odds):
     """
     Convert from US format odds (+110, -200, etc.) to decimal odds - the
@@ -47,59 +42,27 @@ def decimal_to_us(odds):
     else:
         return None
 
-def write_moneyline(odds, site):
+def us_to_str(odds):
     """
-    Write a pair of odds from a site to the database.
+    Convert from US integer odds to an odds string for display formatting.
+    E.g.: +110, -120, +590, etc.
 
     Args:
-        odds [tuple]: ((Team1, Odds1), (Team2, Odds2)), where @Team is a Team
-                      object (e.g. <Team: Houston Rockets>) and @Odds is a
-                      European odds float (e.g. 1.4).
-        site [str]: Website key (e.g. BOOKMAKER).
+        odds [int]: US odds.
     Returns:
-        None
+        [str]: Formatted US odds.
     """
-    if odds:
-        ((t_a, o_a), (t_b, o_b)) = odds
-        ((t1, o1), (t2, o2)) = sorted(((t_a, o_a), (t_b, o_b)),
-                                      key=lambda x: x[0].id)
-        gamestr = Odds.get_gamestr(t1, t2)
-        o, _ = Odds.objects.update_or_create(
-            site=site,
-            bet_type='MONEYLINE',
-            bet_time=timezone.now(),
-            game=gamestr,
-            team1=t1,
-            team2=t2,
-            defaults={
-                'odds1': o1,
-                'odds2': o2
-            }
-        )
-        print 'Updated %s' % o
+    return '+%d' % odds if odds > 0 else str(odds)
 
-def write_arb(odds1, odds2):
+def decimal_to_us_str(odds):
     """
-    Takes two unordered Odds objects, orders them by timestamp, calculates if
-    there is an arb opportunity. If so, writes it to the database.
+    Convert from European decimal odds to a US odds string for display
+    formatting.
+    E.g.: 2.0 -> +100, 2.10 -> +110, 1.50 -> -200
 
     Args:
-        odds1 [Odds]: Odds object.
-        odds2 [Odds]: Odds object.
+        odds [float]: European odds.
     Returns:
-        None
+        [str]: Formatted US odds.
     """
-    (odds1, odds2) = Arb.order_odds((odds1, odds2))
-    option, percentage, margin = arb.calculate_odds(odds1, odds2)
-    if option in Arb.OPTIONS.values() and margin > 0:
-        a, _ = Arb.objects.update_or_create(
-            option=option,
-            odds1=odds1,
-            odds2=odds2,
-            defaults={
-                'percentage': percentage,
-                'margin': margin,
-                'delta': odds2.bet_time - odds1.bet_time
-            }
-        )
-        print 'Updated %s' % a
+    return us_to_str(decimal_to_us(odds))

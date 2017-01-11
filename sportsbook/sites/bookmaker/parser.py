@@ -220,7 +220,7 @@ def write_moneyline(game_id):
     Returns:
         None
     """
-    sbo.write_moneyline(get_moneyline(game_id), 'BOOKMAKER')
+    Odds.write_moneyline(get_moneyline(game_id), 'BOOKMAKER')
 
 def run_moneylines(parallel=False, max_processes=10):
     """

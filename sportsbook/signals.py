@@ -1,7 +1,15 @@
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from sportsbook.models import Odds
+from sportsbook.webhooks import post_to_slack
 
+ARB_DELTA = 5 # In seconds
+MIN_MARGIN, MAX_MARGIN = (0.00, 1.00)
+
+def format_arb_list(arbs):
+    arbs = [arb for arb in arbs
+            if arb.margin > MIN_MARGIN and arb.margin < MAX_MARGIN]
+    return '\n'.join([arb.__unicode__() for arb in arbs])
 
 @receiver(post_save, sender=Odds, dispatch_uid='sportsbook_calculate_arb')
 def calculate_arb(sender, instance, **kwargs):
@@ -17,5 +25,5 @@ def calculate_arb(sender, instance, **kwargs):
             'created': False
         }
     """
-    results = instance.arb(delta=120)
-    #print 'calculate_arb %s: %s' % (instance, results)
+    results = instance.write_arbs(delta=5)
+    post_to_slack(format_arb_list(results))
