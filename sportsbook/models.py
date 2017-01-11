@@ -150,3 +150,63 @@ class Odds(models.Model):
                     'margin': margin
                 })
         return results
+
+class Arb(models.Model):
+    OPTIONS = {
+        'Odds1 Team1 - Odds2 Team 2': 1,
+        'Odds1 Team2 - Odds2 Team 1': 2,
+    }
+    OPTIONS_CHOICES = (
+        (1, 'Odds1 Team1 - Odds2 Team 2'),
+        (2, 'Odds1 Team2 - Odds2 Team 1'),
+    )
+    option = models.IntegerField(choices=OPTIONS_CHOICES)
+    # Order odds by date (earlier odds are odds1, later odds are odds2)
+    odds1 = models.ForeignKey(Odds, related_name='arb1')
+    odds2 = models.ForeignKey(Odds, related_name='arb2')
+    percentage = models.FloatField() # Percentage to allocate to odds1
+    margin = models.FloatField()     # Margin made off the bet
+    delta = models.DurationField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ('option', 'odds1', 'odds2')
+
+    def __unicode__(self):
+        if self.option == 1:
+            return ('[%s] %s, %s: %.2f @ %.2f\n'
+                    '[%s] %s, %s: %.2f @ %.2f\n'
+                    'Margin: %2f (%s interval)'
+                    % (self.odds1.bet_time, self.odds1.site, self.odds1.team1,
+                       self.percentage, self.odds1.odds1,
+                       self.odds2.bet_time, self.odds2.site, self.odds2.team2,
+                       1-self.percentage, self.odds2.odds2,
+                       self.margin, self.delta))
+        elif self.option == 2:
+            return ('[%s] %s, %s: %.2f @ %.2f'
+                    '[%s] %s, %s: %.2f @ %.2f'
+                    'Margin: %2f (%s interval)'
+                    % (self.odds1.bet_time, self.odds1.site, self.odds1.team2,
+                       self.percentage, self.odds1.odds2,
+                       self.odds2.bet_time, self.odds2.site, self.odds2.team1,
+                       1-self.percentage, self.odds2.odds1,
+                       self.margin, self.delta))
+        else:
+            return 'Undefined Representation for Object'
+
+    @classmethod
+    def order_odds(cls, odds):
+        """
+        Order odds by timestamp.
+
+        Args:
+            cls [Odds]: Odds class.
+            teams [list]: Unordered list of odds.
+        Returns:
+            [list]: List of ordered odds. Used for deciding odds1/odds2 in
+                    this model.
+        """
+        # Sort by internal id
+        return sorted(odds, key=lambda x: x.bet_time)
+

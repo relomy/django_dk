@@ -18,18 +18,13 @@ class Migration(migrations.Migration):
             old_name='type',
             new_name='bet_type',
         ),
-        migrations.AddField(
+        migrations.RenameField(
             model_name='odds',
-            name='bet_time',
-            field=models.DateTimeField(default=datetime.datetime(2017, 1, 11, 7, 37, 57, 258332, tzinfo=utc), db_index=True),
-            preserve_default=False,
+            old_name='timestamp',
+            new_name='bet_time',
         ),
         migrations.AlterUniqueTogether(
             name='odds',
             unique_together=set([('site', 'bet_type', 'bet_time', 'game')]),
-        ),
-        migrations.RemoveField(
-            model_name='odds',
-            name='timestamp',
         ),
     ]

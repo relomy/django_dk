@@ -1,6 +1,7 @@
 from django.utils import timezone
 
-from sportsbook.models import Odds
+from sportsbook.models import Odds, Arb
+from sportsbook.algs import arb
 
 def us_to_decimal(odds):
     """
@@ -49,6 +50,7 @@ def decimal_to_us(odds):
 def write_moneyline(odds, site):
     """
     Write a pair of odds from a site to the database.
+
     Args:
         odds [tuple]: ((Team1, Odds1), (Team2, Odds2)), where @Team is a Team
                       object (e.g. <Team: Houston Rockets>) and @Odds is a
@@ -75,3 +77,29 @@ def write_moneyline(odds, site):
             }
         )
         print 'Updated %s' % o
+
+def write_arb(odds1, odds2):
+    """
+    Takes two unordered Odds objects, orders them by timestamp, calculates if
+    there is an arb opportunity. If so, writes it to the database.
+
+    Args:
+        odds1 [Odds]: Odds object.
+        odds2 [Odds]: Odds object.
+    Returns:
+        None
+    """
+    (odds1, odds2) = Arb.order_odds((odds1, odds2))
+    option, percentage, margin = arb.calculate_odds(odds1, odds2)
+    if option in Arb.OPTIONS.values() and margin > 0:
+        a, _ = Arb.objects.update_or_create(
+            option=option,
+            odds1=odds1,
+            odds2=odds2,
+            defaults={
+                'percentage': percentage,
+                'margin': margin,
+                'delta': odds2.bet_time - odds1.bet_time
+            }
+        )
+        print 'Updated %s' % a
