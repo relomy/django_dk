@@ -47,7 +47,7 @@ def calculate_odds(odds1, odds2):
                   [float] percentage of the bet to allocate to odds1,
                   [float] margin)
     """
-    if (odds1.type != odds2.type or odds1.game != odds2.game
+    if (odds1.bet_type != odds2.bet_type or odds1.game != odds2.game
         or odds1.team1 != odds2.team1 or odds1.team2 != odds2.team2):
         return (0, 0.0, 0.0)
     return calculate((odds1.odds1, odds1.odds2), (odds2.odds1, odds2.odds2))

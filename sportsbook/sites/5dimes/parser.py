@@ -129,9 +129,9 @@ def dump_moneyline():
         ((t1, o1), (t2, o2)) = sorted(((t_a, o_a), (t_b, o_b)),
                                       key=lambda x: x[0].id)
         Odds.update_or_create(
-            site='BOOKMAKER',
-            type='MONEYLINE',
-            timestamp=datetime.datetime.now(),
+            site='5DIMES',
+            bet_type='MONEYLINE',
+            bet_time=datetime.datetime.now(),
             team1=t1,
             team2=t2,
             defaults={

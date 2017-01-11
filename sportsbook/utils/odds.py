@@ -64,8 +64,8 @@ def write_moneyline(odds, site):
         gamestr = Odds.get_gamestr(t1, t2)
         o, _ = Odds.objects.update_or_create(
             site=site,
-            type='MONEYLINE',
-            timestamp=timezone.now(),
+            bet_type='MONEYLINE',
+            bet_time=timezone.now(),
             game=gamestr,
             team1=t1,
             team2=t2,

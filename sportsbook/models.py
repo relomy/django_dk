@@ -6,8 +6,8 @@ from sportsbook.algs import arb
 class Odds(models.Model):
     site = models.CharField(max_length=20)
     # 'MONEYLINE', 'POINT TOTAL', etc.
-    type = models.CharField(max_length=20)
-    timestamp = models.DateTimeField(auto_now=True, db_index=True)
+    bet_type = models.CharField(max_length=20)
+    bet_time = models.DateTimeField(db_index=True)
     # TODO: Using the get_gamestr() method for now, but this should be a
     #       foreign key that references the nba_game table.
     game = models.CharField(max_length=100)
@@ -20,11 +20,11 @@ class Odds(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        unique_together = ('site', 'type', 'timestamp', 'game')
+        unique_together = ('site', 'bet_type', 'bet_time', 'game')
 
     def __unicode__(self):
         return ('%s %s @ %s: %s (%.2f) v %s (%.2f)'
-                % (self.site, self.type, self.timestamp, self.team1,
+                % (self.site, self.bet_type, self.bet_time, self.team1,
                    self.odds1, self.team2, self.odds2))
 
     @classmethod
@@ -47,22 +47,22 @@ class Odds(models.Model):
         return sorted(teams, key=lambda x: x.id)
 
     @classmethod
-    def match_odds(cls, timestamp, type, delta=60):
+    def match_odds(cls, bet_time, bet_type, delta=60):
         """
         Args:
             cls [Odds]: Odds class.
-            timestamp [datetime]: Timestamp we are querying for.
-            type [list]: Type of bet (e.g. MONEYLINE).
+            bet_time [datetime]: Timestamp we are querying for.
+            bet_type [list]: Type of bet (e.g. MONEYLINE).
             delta [int]: Margin of error, in seconds. Defaults to 1 minute.
         Returns:
             [list]: List of odds objects that match the criteria. Limits to one
                     per site.
         """
-        min_timestamp = timestamp - datetime.timedelta(seconds=delta)
-        max_timestamp = timestamp + datetime.timedelta(seconds=delta)
-        return Odds.objects.filter(timestamp__gte=min_timestamp,
-                                   timestamp__lte=max_timestamp,
-                                   type=type).distinct('site')
+        min_bet_time = bet_time - datetime.timedelta(seconds=delta)
+        max_bet_time = bet_time + datetime.timedelta(seconds=delta)
+        return Odds.objects.filter(bet_time__gte=min_bet_time,
+                                   bet_time__lte=max_bet_time,
+                                   bet_type=bet_type).distinct('site')
 
     def match_odds(self, delta=60):
         """
@@ -70,24 +70,24 @@ class Odds(models.Model):
 
         Args:
             self [Odds]: Odds instance.
-            timestamp [datetime]: Timestamp we are querying for.
+            bet_time [datetime]: Timestamp we are querying for.
             delta [int]: Max margin of error, in seconds. Defaults to 1 minute.
         Returns:
             [list]: List of odds objects that match the criteria. Limits to one
                     per site.
         """
         results = []
-        min_timestamp = self.timestamp - datetime.timedelta(seconds=delta)
-        max_timestamp = self.timestamp + datetime.timedelta(seconds=delta)
-        odds = (Odds.objects.filter(timestamp__gte=min_timestamp,
-                                    timestamp__lte=max_timestamp,
-                                    type=self.type,
+        min_bet_time = self.bet_time - datetime.timedelta(seconds=delta)
+        max_bet_time = self.bet_time + datetime.timedelta(seconds=delta)
+        odds = (Odds.objects.filter(bet_time__gte=min_bet_time,
+                                    bet_time__lte=max_bet_time,
+                                    bet_type=self.bet_type,
                                     game=self.game)
                             .exclude(site=self.site)
-                            .order_by('timestamp'))
+                            .order_by('bet_time'))
         for site in set([o.site for o in odds]):
             closest = sorted([o for o in odds if o.site == site],
-                             key=lambda x: abs(o.timestamp - self.timestamp))[0]
+                             key=lambda x: abs(o.bet_time - self.bet_time))[0]
             results.append(closest)
         return results
 
@@ -125,10 +125,10 @@ class Odds(models.Model):
             opt, percentage, margin = arb.calculate_odds(self, other)
             if opt == 1:
                 print ('[%s] %s, %s: %.2f @ %.2f'
-                       % (self.timestamp, self.site, self.team1, percentage,
+                       % (self.bet_time, self.site, self.team1, percentage,
                           self.odds1))
                 print ('[%s] %s, %s: %.2f @ %.2f'
-                       % (other.timestamp, other.site, other.team2,
+                       % (other.bet_time, other.site, other.team2,
                           1-percentage, other.odds2))
                 print 'Margin: %2f' % margin
                 results.append({
@@ -138,10 +138,10 @@ class Odds(models.Model):
                 })
             elif opt == 2:
                 print ('[%s] %s, %s: %.2f @ %.2f'
-                       % (self.timestamp, self.site, self.team2, percentage,
+                       % (self.bet_time, self.site, self.team2, percentage,
                           self.odds2))
                 print ('[%s] %s, %s: %.2f @ %.2f'
-                       % (other.timestamp, other.site, other.team1,
+                       % (other.bet_time, other.site, other.team1,
                           1-percentage, other.odds1))
                 print 'Margin: %2f' % margin
                 results.append({
