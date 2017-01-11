@@ -29,7 +29,7 @@ def calculate(site1, site2):
     ratio2 = 1.0/s1o2 + 1.0/s2o1
 
     if ratio1 < 1.0 and ratio1 < ratio2:
-        return (1, s2o2 / (s1o1 + s2o2), s1o1 * s2o2 / (s1o1 * s2o2) - 1)
+        return (1, s2o2 / (s1o1 + s2o2), s1o1 * s2o2 / (s1o1 + s2o2) - 1)
     elif ratio2 < 1.0:
         return (2, s2o1 / (s1o2 + s2o1), s1o2 * s2o1 / (s1o2 + s2o1) - 1)
     else:

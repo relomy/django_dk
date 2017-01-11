@@ -1,3 +1,22 @@
+#Arb Setup
+
+* Update players and teams in the database:
+```
+$ python manage.py fetch -p curr
+```
+* Run the periodic tasks to update the database with odds data:
+```
+# In three separate processes:
+$ rabbitmq-server
+$ celery -A fantasia beat -l info
+$ celery -A fantasia worker -l info --without-mingle
+```
+* Or, run a one-off task to update the database with odds data:
+```
+$ python manage.py sportsbook_tasks -n write_moneylines -p bookmaker
+$ python manage.py sportsbook_tasks -n write_moneylines -p betonline
+```
+
 #NBA Stats
 
 #Queries

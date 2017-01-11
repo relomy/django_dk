@@ -15,15 +15,15 @@ def write_moneylines(site=''):
         site [str]: Website to pull moneyline odds from.
     """
     try:
-        print '[INFO/tasks.pull_moneylines] Starting task.'
+        print '[INFO/tasks.write_moneylines] Starting task.'
         if site == 'bookmaker':
             bm_write_moneylines(parallel=True)
         elif site == 'betonline':
             bo_write_moneylines(parallel=True)
         else:
-            print ('[WARNING/tasks.pull_moneylines]: No procedure defined for'
+            print ('[WARNING/tasks.write_moneylines]: No procedure defined for'
                    ' site %s.' % site)
     except Exception, e:
-        print '[ERROR/tasks.pull_moneylines]: %s' % e
+        print '[ERROR/tasks.write_moneylines]: %s' % e
     finally:
-        print '[INFO/tasks.pull_moneylines] Successfully exited task.'
+        print '[INFO/tasks.write_moneylines] Successfully exited task.'
