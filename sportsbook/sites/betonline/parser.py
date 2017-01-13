@@ -137,28 +137,32 @@ def get_moneyline(game_id):
     Args:
         game_id [str]: Id of the game to get lines for.
     Returns:
-        [tuple]: ((Team1, Odds1), (Team2, Odds2)), where @Team is a Team object
-                 (e.g. <Team: Houston Rockets>) and @Odds is a European odds
-                 float (e.g. 1.4).
+        [tuple]: ((Team1, Odds1, Pos1), (Team2, Odds2, Pos2), Game Id, Prop Id),
+                 where @Team is a Team object (e.g. <Team: Houston Rockets>),
+                 @Odds is a European odds float (e.g. 1.4), Pos in an integer
+                 for the bet position (e.g. 1 or 2), and Game Id and Prop Id
+                 are the corresponding ids.
     """
-    def is_moneyline(html):
+    def is_moneyline(bet):
         # Take the first group, which is the value of propTitle
-        if html:
-            soup = BeautifulSoup(html, 'html5lib')
+        if 'html' in bet and bet['html']:
+            soup = BeautifulSoup(bet['html'], 'html5lib')
             title = soup.find_all(class_='propTitle')
             return title and title[0] and title[0].string == 'Moneyline'
         return False
 
-    def get_odds(html):
+    def get_odds(bet):
         try:
-            soup = BeautifulSoup(html, 'html5lib')
+            soup = BeautifulSoup(bet['html'], 'html5lib')
             team1, team2 = [node.string for node in soup.find_all(class_='name')]
             odds1, odds2 = [node.string for node in soup.find_all(class_='odds')]
+            pos1, pos2 = (1, 2)
             team1, team2 = (normalize_team(team1), normalize_team(team2))
             odds1, odds2 = (normalize_odds(odds1), normalize_odds(odds2))
             # Sort by team id
-            return sorted(((team1, odds1), (team2, odds2)),
-                          key=lambda x: x[0].id)
+            results = sorted(((team1, odds1, pos1), (team2, odds2, pos2)),
+                             key=lambda x: x[0].id)
+            return (results[0], results[1], bet['gameID'], bet['propID'])
         except ValueError:
             print '[WARNING/betonline.get_odds()]: Unable to parse odds HTML.'
             return None
@@ -171,8 +175,8 @@ def get_moneyline(game_id):
     if response.status_code == 200:
         try:
             bets = response.json()['d']['gvProps']
-            odds = [get_odds(bet['html']) for bet in bets
-                    if is_moneyline(bet['html']) and get_odds(bet['html'])]
+            odds = [get_odds(bet) for bet in bets
+                    if is_moneyline(bet) and get_odds(bet)]
             if len(odds) == 1:
                 return odds[0]
             else:

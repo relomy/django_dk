@@ -17,8 +17,12 @@ class Odds(models.Model):
     team1 = models.ForeignKey(nba_models.Team, related_name='odds1')
     # Odds are in European (decimal) format
     odds1 = models.FloatField()
+    pos1 = models.IntegerField(default=1)
     team2 = models.ForeignKey(nba_models.Team, related_name='odds2')
     odds2 = models.FloatField()
+    pos2 = models.IntegerField(default=2)
+    prop_id = models.CharField(max_length=50, null=True, blank=True)
+    game_id = models.CharField(max_length=50, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -56,17 +60,21 @@ class Odds(models.Model):
         Write a pair of odds from a site to the database.
 
         Args:
-            odds [tuple]: ((Team1, Odds1), (Team2, Odds2)), where @Team is a
-                          Team object (e.g. <Team: Houston Rockets>) and @Odds
-                          is a European odds float (e.g. 1.4).
+            odds [tuple]: ((Team1, Odds1, Pos1), (Team2, Odds2, Pos2), Game Id,
+                           Prop Id), where @Team is a Team object
+                           (e.g. <Team: Houston Rockets>), @Odds is a European
+                           odds float (e.g. 1.4), Pos in an integer for the bet
+                           position (e.g. 1 or 2), and Game Id and Prop Id are
+                           the corresponding ids.
             site [str]: Website key (e.g. BOOKMAKER).
         Returns:
             None
         """
         if odds:
-            ((t_a, o_a), (t_b, o_b)) = odds
-            ((t1, o1), (t2, o2)) = sorted(((t_a, o_a), (t_b, o_b)),
-                                          key=lambda x: x[0].id)
+            ((t_a, o_a, p_a), (t_b, o_b, p_b), game_id, prop_id) = odds
+            ((t1, o1, p1), (t2, o2, p2)) = sorted(
+                ((t_a, o_a, p_a), (t_b, o_b, p_b)), key=lambda x: x[0].id
+            )
             gamestr = Odds.get_gamestr(t1, t2)
             o, _ = Odds.objects.update_or_create(
                 site=site,
@@ -77,7 +85,11 @@ class Odds(models.Model):
                 team2=t2,
                 defaults={
                     'odds1': o1,
-                    'odds2': o2
+                    'odds2': o2,
+                    'pos1': p1,
+                    'pos2': p2,
+                    'game_id': game_id,
+                    'prop_id': prop_id,
                 }
             )
             print 'Updated %s' % o
