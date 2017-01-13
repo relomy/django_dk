@@ -25,9 +25,6 @@ balance: 48.00
 
 import os
 import requests
-from sportsbook.sites.betonline.user import get_user
-
-URL = 'https://dgslivebetting.betonline.ag/ngwbet.aspx/betSlipPostOne'
 
 USER_AGENT = ('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_5)'
               ' AppleWebKit/537.36 (KHTML, like Gecko)'
@@ -35,13 +32,23 @@ USER_AGENT = ('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_5)'
 
 def bet(game_id, prop_id, position, amount, **kwargs):
     """
-    Response: {
-        "d": {
-            "__type":"NGW.WebClient.AjaxMessages.PostBetsResp",
-            "res":1,
-            "errMsg":"Bet is not in the bet slip"
+    Response:
+        Success:
+        {
+            "d": {
+                "__type": "NGW.WebClient.AjaxMessages.PostBetsResp",
+                "res": 0,
+                "html": "..."
+            }
         }
-    }
+        Failure:
+        {
+            "d": {
+                "__type": "NGW.WebClient.AjaxMessages.PostBetsResp",
+                "res": 1,
+                "errMsg": "Bet is not in the bet slip"
+            }
+        }
     """
     def add_to_bet_slip():
         cookies = {
@@ -101,7 +108,6 @@ def bet(game_id, prop_id, position, amount, **kwargs):
             '_gat_UA-88758458-1': '1',
             '_ga': 'GA1.2.1850710465.1484177532',
         }
-
         headers = {
             'Pragma': 'no-cache',
             'Origin': 'https://dgslivebetting.betonline.ag',
