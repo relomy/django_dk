@@ -15,6 +15,7 @@ def format_arb_list(arbs):
     return '\n'.join([arb.__unicode__() for arb in arbs])
 
 def get_bettor(site):
+    """TODO: Refactor this"""
     if site == 'BOOKMAKER':
         return bm_bettor
     elif site == 'BETONLINE':
@@ -38,15 +39,17 @@ def bet(arb, amount=1.00):
         and arb.option in (1, 2)):
         bettor1 = get_bettor(odds1.site)
         bettor2 = get_bettor(odds2.site)
-        if odds1.option == 1:
+        if arb.option == 1:
             pass1 = bettor1.bet(odds1.game_id, odds1.prop_id, odds1.pos1,
-                                round_bet(amount * arb.percentage))
+                                round_bet(amount * arb.percentage),
+                                odds=odds1.odds1)
             if pass1:
                 post_to_slack(bet_success_str(amount * arb.percentage,
                                               odds1.team1, odds1.site,
                                               odds1.odds1))
                 pass2 = bettor2.bet(odds2.game_id, odds2.prop_id, odds2.pos2,
-                                    round_bet(amount * (1-arb.percentage)))
+                                    round_bet(amount * (1-arb.percentage)),
+                                    odds=odds2.odds2)
                 if pass2:
                     post_to_slack(bet_success_str(amount * 1-arb.percentage,
                                                   odds2.team2, odds2.site,
@@ -59,15 +62,17 @@ def bet(arb, amount=1.00):
                 post_to_slack(bet_failure_str(amount * arb.percentage,
                                               odds1.team1, odds1.site,
                                               odds1.odds1))
-        elif odds1.option == 2:
+        elif arb.option == 2:
             pass1 = bettor1.bet(odds1.game_id, odds1.prop_id, odds1.pos2,
-                                round_bet(amount * arb.percentage))
+                                round_bet(amount * arb.percentage),
+                                odds=odds1.odds2)
             if pass1:
                 post_to_slack(bet_success_str(amount * arb.percentage,
                                               odds1.team2, odds1.site,
                                               odds1.odds2))
                 pass2 = bettor2.bet(odds2.game_id, odds2.prop_id, odds2.pos1,
-                                    round_bet(amount * (1-arb.percentage)))
+                                    round_bet(amount * (1-arb.percentage)),
+                                    odds=odds2.odds1)
                 if pass2:
                     post_to_slack(bet_success_str(amount * 1-arb.percentage,
                                                   odds2.team1, odds2.site,

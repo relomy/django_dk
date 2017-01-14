@@ -16,6 +16,10 @@ $ celery -A fantasia worker -l info --without-mingle
 $ python manage.py sportsbook_tasks -n write_moneylines -p bookmaker
 $ python manage.py sportsbook_tasks -n write_moneylines -p betonline
 ```
+* Test bets
+```
+$ python manage.py bet -s betonline -p 1 -a 1
+```
 
 #NBA Stats
 
