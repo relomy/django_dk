@@ -90,6 +90,9 @@ def bet(game_id, prop_id, position, amount, **kwargs):
             # Check particular formatting for a successful bet
             if 'errMsg' in results.json()['d']:
                 print results.json()['d']['errMsg']
+            elif 'frozen' in results.json()['d']['html'].lower():
+                print 'Aborting bet: frozen'
+                return False
             return results.json()['d']['res'] == 0
         except (ValueError, KeyError):
             return False
@@ -145,4 +148,4 @@ def bet(game_id, prop_id, position, amount, **kwargs):
             return False
     else:
         print '[ERROR/bookmaker.bettor] Unable to add bet to bet slip.'
-        return Fals
+        return False

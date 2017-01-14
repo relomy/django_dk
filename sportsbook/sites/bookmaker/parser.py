@@ -170,6 +170,10 @@ def get_moneyline(game_id):
             return match and match.group(1) == 'Winner Match'
         return False
 
+    def is_frozen(bet):
+        if 'html' in bet and bet['html']:
+            return 'frozen' in bet['html'].lower()
+
     def get_odds(bet):
         try:
             html = bet['html']
@@ -198,8 +202,8 @@ def get_moneyline(game_id):
     if response.status_code == 200:
         try:
             bets = response.json()['d']['gvProps']
-            odds = [get_odds(bet) for bet in bets
-                    if is_moneyline(bet) and get_odds(bet)]
+            odds = [get_odds(bet) for bet in bets if is_moneyline(bet)
+                    and not is_frozen(bet) and get_odds(bet)]
             if len(odds) == 1:
                 return odds[0]
             else:
