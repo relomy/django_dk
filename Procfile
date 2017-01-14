@@ -1,2 +1,2 @@
-scheduler: celery -A fantasia beat -l info
-worker: celery -A fantasia worker -l info --without-mingle
+scheduler: celery -A fantasia beat -l warning
+worker: celery -A fantasia worker -l warning --without-mingle

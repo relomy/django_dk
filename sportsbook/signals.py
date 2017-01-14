@@ -59,12 +59,12 @@ def add_bets(b1, b2, arb, amount):
 def place_bets(b1, b2, arb, amount):
     (b1_bettor, b1_game_id, b1_prop_id, b1_pos, b1_team, b1_odds, b1_site) = b1
     (b2_bettor, b2_game_id, b2_prop_id, b2_pos, b2_team, b2_odds, b2_site) = b2
-    result1 = b1_bettor.add_bet(b1_game_id, b1_prop_id, b1_pos,
-                                round_bet(amount * arb.percentage),
-                                odds=b1_odds)
-    result2 = b2_bettor.add_bet(b2_game_id, b2_prop_id, b2_pos,
-                                round_bet(amount * arb.percentage),
-                                odds=b2_odds)
+    result1 = b1_bettor.place_bet(b1_game_id, b1_prop_id, b1_pos,
+                                  round_bet(amount * arb.percentage),
+                                  odds=b1_odds)
+    result2 = b2_bettor.place_bet(b2_game_id, b2_prop_id, b2_pos,
+                                  round_bet(amount * arb.percentage),
+                                  odds=b2_odds)
     if result1['success']:
         post_bet_to_slack(
             bet_success_str(amount * arb.percentage, b1_team, b1_site, b1_odds)
@@ -101,10 +101,12 @@ def remove_bets(b1, b2, arb, amount):
 def bet(arb, amount=1.00):
     odds1 = arb.odds1
     odds2 = arb.odds2
+    post_bet_to_slack('Attempting to bet: %s' % arb)
     if (odds1.game_id and odds1.prop_id and odds2.game_id and odds2.prop_id
         and arb.option in (1, 2)):
         bettor1 = get_bettor(odds1.site)
         bettor2 = get_bettor(odds2.site)
+        post_bet_to_slack('Starting bet: %s' % arb)
         if arb.option == 1:
             b1 = (bettor1, odds1.game_id, odds1.prop_id, odds1.pos1,
                   odds1.team1, odds1.odds1, odds1.site)

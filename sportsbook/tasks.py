@@ -18,8 +18,8 @@ def write_moneylines(site=''):
     """
     try:
         print '[INFO/tasks.write_moneylines] Starting task.'
-        # If current hour is not from 4PM-10PM, abort
-        if datetime.datetime.now(timezone('US/Pacific')).hour not in range(16, 22):
+        # If current hour is not from 1PM-10PM, abort
+        if datetime.datetime.now(timezone('US/Pacific')).hour not in range(13, 22):
             return
 
         if site == 'bookmaker':

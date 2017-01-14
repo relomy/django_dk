@@ -69,11 +69,11 @@ def add_bet(game_id, prop_id, position, amount, **kwargs):
         }
     )
     try:
-        if 'frozen' in response.json()['d']['html'].lower():
-            return {
-                'success': False,
-                'message': 'Bet is frozen'
-            }
+        #if 'frozen' in response.json()['d']['html'].lower():
+        #    return {
+        #        'success': False,
+        #        'message': 'Bet is frozen'
+        #    }
         # Check particular formatting for a successful bet
         message = (response.json()['d']['errMsg']
                    if 'errMsg' in response.json()['d'] else '')

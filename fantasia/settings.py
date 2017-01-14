@@ -102,6 +102,8 @@ CELERY_BROKER_CONNECTION_TIMEOUT = 30 # May require a long timeout due to Linux 
 CELERY_SEND_EVENTS = False # Will not create celeryev.* queues
 CELERY_EVENT_QUEUE_EXPIRES = 60 # Will delete all celeryev. queues without
                                 # consumers after 1 minute.
+CELERYD_REDIRECT_STDOUTS = True
+CELERYD_REDIRECT_STDOUTS_LEVEL = 'WARNING'
 
 # Internationalization
 # https://docs.djangoproject.com/en/1.8/topics/i18n/
