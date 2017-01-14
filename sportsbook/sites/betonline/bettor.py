@@ -30,7 +30,65 @@ USER_AGENT = ('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_5)'
               ' AppleWebKit/537.36 (KHTML, like Gecko)'
               ' Chrome/55.0.2883.95 Safari/537.36')
 
-def bet(game_id, prop_id, position, amount, **kwargs):
+def add_bet(game_id, prop_id, position, amount, **kwargs):
+    cookies = {
+        'ASP.NET_SessionId': os.environ['BETONLINE_SESSION_ID'],
+        'tz': 'Eastern Standard Time',
+        '__utma': '203177346.1850710465.1484177532.1484270477.1484278687.13',
+        '__utmb': '203177346.1.10.1484278687',
+        '__utmc': '203177346',
+        '__utmz': ('203177346.1484184230.3.2.utmcsr=betonline.ag'
+                   '|utmccn=(referral)|utmcmd=referral'
+                   '|utmcct=/come-back-soon'),
+        '_gat_UA-88758458-1': '1',
+        '_gat_UA-30537011-1': '1',
+        '_ga': 'GA1.2.1850710465.1484177532',
+    }
+    headers = {
+        'Accept-Language': 'en-US,en;q=0.8',
+        'Accept-Encoding': 'gzip, deflate, br',
+        'Connection': 'keep-alive',
+        'X-Requested-With': 'XMLHttpRequest',
+        'Origin': 'https://dgslivebetting.betonline.ag',
+        'Accept': '*/*',
+        'User-Agent': USER_AGENT,
+        'Referer': 'https://dgslivebetting.betonline.ag/ngwbet.aspx',
+        'Pragma': 'no-cache',
+        'Cache-Control': 'no-cache',
+        'Content-Type': 'application/json; charset=UTF-8'
+    }
+    response = requests.post(
+        'https://dgslivebetting.betonline.ag/ngwbet.aspx/betSlipAdd',
+        headers=headers,
+        cookies=cookies,
+        json={
+            'propID': prop_id,
+            'pos': position,
+            'odds': kwargs['odds'],
+            'points': 0
+        }
+    )
+    try:
+        if 'frozen' in response.json()['d']['html'].lower():
+            return {
+                'success': False,
+                'message': 'Bet is frozen'
+            }
+        # Check particular formatting for a successful bet
+        message = (response.json()['d']['errMsg']
+                   if 'errMsg' in response.json()['d'] else '')
+        return {
+            'success': response.json()['d']['res'] == 0,
+            'message': message
+        }
+    except (ValueError, KeyError):
+        return {
+            'success': False,
+            'message': 'Malformed response'
+        }
+
+
+def place_bet(game_id, prop_id, position, amount, **kwargs):
     """
     Response:
         Success:
@@ -50,104 +108,100 @@ def bet(game_id, prop_id, position, amount, **kwargs):
             }
         }
     """
-    def add_to_bet_slip():
-        cookies = {
-            'ASP.NET_SessionId': os.environ['BETONLINE_SESSION_ID'],
-            'tz': 'Eastern Standard Time',
-            '__utma': '203177346.1850710465.1484177532.1484270477.1484278687.13',
-            '__utmb': '203177346.1.10.1484278687',
-            '__utmc': '203177346',
-            '__utmz': ('203177346.1484184230.3.2.utmcsr=betonline.ag'
-                       '|utmccn=(referral)|utmcmd=referral'
-                       '|utmcct=/come-back-soon'),
-            '_gat_UA-88758458-1': '1',
-            '_gat_UA-30537011-1': '1',
-            '_ga': 'GA1.2.1850710465.1484177532',
+    cookies = {
+        'ASP.NET_SessionId': os.environ['BETONLINE_SESSION_ID'],
+        'tz': 'Eastern Standard Time',
+        '__utma': '203177346.1850710465.1484177532.1484270477.1484278687.13',
+        '__utmc': '203177346',
+        '__utmz': ('203177346.1484184230.3.2.utmcsr=betonline.ag'
+                   '|utmccn=(referral)|utmcmd=referral'
+                   '|utmcct=/come-back-soon'),
+        '_gat_UA-30537011-1': '1',
+        '_gat_UA-88758458-1': '1',
+        '_ga': 'GA1.2.1850710465.1484177532',
+    }
+    headers = {
+        'Pragma': 'no-cache',
+        'Origin': 'https://dgslivebetting.betonline.ag',
+        'Accept-Encoding': 'gzip, deflate, br',
+        'Accept-Language': 'en-US,en;q=0.8',
+        'User-Agent': USER_AGENT,
+        'Content-Type': 'application/json; charset=UTF-8',
+        'Accept': '*/*',
+        'Cache-Control': 'no-cache',
+        'X-Requested-With': 'XMLHttpRequest',
+        'Connection': 'keep-alive',
+        'Referer': 'https://dgslivebetting.betonline.ag/ngwbet.aspx',
+    }
+    response = requests.post(
+        'https://dgslivebetting.betonline.ag/ngwbet.aspx/betSlipPostOne',
+        headers=headers,
+        cookies=cookies,
+        json={
+            'propID': prop_id,
+            'pos': position,
+            'betAmt': amount,
+            'lcopt': 1
         }
-        headers = {
-            'Accept-Language': 'en-US,en;q=0.8',
-            'Accept-Encoding': 'gzip, deflate, br',
-            'Connection': 'keep-alive',
-            'X-Requested-With': 'XMLHttpRequest',
-            'Origin': 'https://dgslivebetting.betonline.ag',
-            'Accept': '*/*',
-            'User-Agent': USER_AGENT,
-            'Referer': 'https://dgslivebetting.betonline.ag/ngwbet.aspx',
-            'Pragma': 'no-cache',
-            'Cache-Control': 'no-cache',
-            'Content-Type': 'application/json; charset=UTF-8'
+    )
+    try:
+        # Check particular formatting for a successful bet
+        message = (response.json()['d']['errMsg']
+                   if 'errMsg' in response.json()['d'] else '')
+        return {
+            'success': response.json()['d']['res'] == 0,
+            'message': message
         }
-        results = requests.post(
-            'https://dgslivebetting.betonline.ag/ngwbet.aspx/betSlipAdd',
-            headers=headers,
-            cookies=cookies,
-            json={
-                'propID': prop_id,
-                'pos': position,
-                'odds': kwargs['odds'],
-                'points': 0
-            })
-        try:
-            # Check particular formatting for a successful bet
-            if 'errMsg' in results.json()['d']:
-                print results.json()['d']['errMsg']
-            elif 'frozen' in results.json()['d']['html'].lower():
-                print 'Aborting bet: frozen'
-                return False
-            return results.json()['d']['res'] == 0
-        except (ValueError, KeyError):
-            return False
+    except (ValueError, KeyError):
+        return {
+            'success': False,
+            'message': 'Malformed response'
+        }
 
-    def place_bet():
-        cookies = {
-            'ASP.NET_SessionId': os.environ['BETONLINE_SESSION_ID'],
-            'tz': 'Eastern Standard Time',
-            '__utma': '203177346.1850710465.1484177532.1484270477.1484278687.13',
-            '__utmc': '203177346',
-            '__utmz': ('203177346.1484184230.3.2.utmcsr=betonline.ag'
-                       '|utmccn=(referral)|utmcmd=referral'
-                       '|utmcct=/come-back-soon'),
-            '_gat_UA-30537011-1': '1',
-            '_gat_UA-88758458-1': '1',
-            '_ga': 'GA1.2.1850710465.1484177532',
-        }
-        headers = {
-            'Pragma': 'no-cache',
-            'Origin': 'https://dgslivebetting.betonline.ag',
-            'Accept-Encoding': 'gzip, deflate, br',
-            'Accept-Language': 'en-US,en;q=0.8',
-            'User-Agent': USER_AGENT,
-            'Content-Type': 'application/json; charset=UTF-8',
-            'Accept': '*/*',
-            'Cache-Control': 'no-cache',
-            'X-Requested-With': 'XMLHttpRequest',
-            'Connection': 'keep-alive',
-            'Referer': 'https://dgslivebetting.betonline.ag/ngwbet.aspx',
-        }
-        results = requests.post(
-            'https://dgslivebetting.betonline.ag/ngwbet.aspx/betSlipPostOne',
-            headers=headers,
-            cookies=cookies,
-            json={
-                'propID': prop_id,
-                'pos': position,
-                'betAmt': amount,
-                'lcopt': 1
-            })
-        try:
-            # Check particular formatting for a successful bet
-            if 'errMsg' in results.json()['d']:
-                print results.json()['d']['errMsg']
-            return results.json()['d']['res'] == 0
-        except (ValueError, KeyError):
-            return False
+def remove_bet(game_id, prop_id, position, **kwargs):
+    cookies = {
+        'ASP.NET_SessionId': os.environ['BETONLINE_SESSION_ID'],
+        'tz': 'Eastern Standard Time',
+        '__utma': '203177346.574533016.1484354896.1484363206.1484365522.4',
+        '__utmc': '203177346',
+        '__utmz': ('203177346.1484354896.1.1.utmcsr=(direct)'
+                   '|utmccn=(direct)|utmcmd=(none)'),
+        '_gat_UA-30537011-1': '1',
+        '_gat_UA-88758458-1': '1',
+        '_ga': 'GA1.2.574533016.1484354896',
+    }
 
-    if add_to_bet_slip():
-        if place_bet():
-            return True
-        else:
-            print '[ERROR/betonline.bettor] Unable to place bet.'
-            return False
-    else:
-        print '[ERROR/betonline.bettor] Unable to add bet to bet slip.'
-        return False
+    headers = {
+        'Pragma': 'no-cache',
+        'Origin': 'https://dgslivebetting.betonline.ag',
+        'Accept-Encoding': 'gzip, deflate, br',
+        'Accept-Language': 'en-US,en;q=0.8',
+        'User-Agent': USER_AGENT,
+        'Content-Type': 'application/json; charset=UTF-8',
+        'Accept': '*/*',
+        'Cache-Control': 'no-cache',
+        'X-Requested-With': 'XMLHttpRequest',
+        'Connection': 'keep-alive',
+        'Referer': 'https://dgslivebetting.betonline.ag/ngwbet.aspx',
+    }
+
+    response = requests.post(
+        'https://dgslivebetting.betonline.ag/ngwbet.aspx/betSlipRemove',
+        headers=headers,
+        cookies=cookies,
+        json={ 'propID': prop_id, 'pos': position }
+    )
+    try:
+        # Check particular formatting for a successful bet
+        message = (response.json()['d']['errMsg']
+                   if 'errMsg' in response.json()['d'] else '')
+        return {
+            'success': response.json()['d']['res'] == 0,
+            'message': message
+        }
+    except (ValueError, KeyError):
+        return {
+            'success': False,
+            'message': 'Malformed response'
+        }
+
