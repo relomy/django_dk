@@ -1,7 +1,7 @@
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from sportsbook.models import Odds
-from sportsbook.webhooks import post_to_slack
+from sportsbook.webhooks import post_opp_to_slack, post_bet_to_slack
 from sportsbook.utils.odds import decimal_to_us_str
 from sportsbook.sites.bookmaker import bettor as bm_bettor
 from sportsbook.sites.betonline import bettor as bo_bettor
@@ -48,20 +48,24 @@ def bet(arb, amount=1.00):
                                     round_bet(amount * (1-arb.percentage)),
                                     odds=odds2.odds2)
                 if pass2:
-                    post_to_slack(bet_success_str(amount * arb.percentage,
-                                                  odds1.team1, odds1.site,
-                                                  odds1.odds1))
-                    post_to_slack(bet_success_str(amount * 1-arb.percentage,
-                                                  odds2.team2, odds2.site,
-                                                  odds2.odds2))
+                    post_bet_to_slack(
+                        bet_success_str(amount * arb.percentage,
+                                        odds1.team1, odds1.site, odds1.odds1)
+                    )
+                    post_bet_to_slack(
+                        bet_success_str(amount * 1-arb.percentage,
+                                        odds2.team2, odds2.site, odds2.odds2)
+                    )
                 else:
-                    post_to_slack(bet_failure_str(amount * 1-arb.percentage,
-                                                  odds2.team2, odds2.site,
-                                                  odds2.odds2))
+                    post_opp_to_slack(
+                        bet_failure_str(amount * 1-arb.percentage,
+                                        odds2.team2, odds2.site, odds2.odds2)
+                    )
             else:
-                post_to_slack(bet_failure_str(amount * arb.percentage,
-                                              odds1.team1, odds1.site,
-                                              odds1.odds1))
+                post_opp_to_slack(
+                    bet_failure_str(amount * arb.percentage,
+                                    odds1.team1, odds1.site, odds1.odds1)
+                )
         elif arb.option == 2:
             pass1 = bettor1.bet(odds1.game_id, odds1.prop_id, odds1.pos2,
                                 round_bet(amount * arb.percentage),
@@ -71,20 +75,24 @@ def bet(arb, amount=1.00):
                                     round_bet(amount * (1-arb.percentage)),
                                     odds=odds2.odds1)
                 if pass2:
-                    post_to_slack(bet_success_str(amount * arb.percentage,
-                                                  odds1.team2, odds1.site,
-                                                  odds1.odds2))
-                    post_to_slack(bet_success_str(amount * 1-arb.percentage,
-                                                  odds2.team1, odds2.site,
-                                                  odds2.odds1))
+                    post_bet_to_slack(
+                        bet_success_str(amount * arb.percentage,
+                                        odds1.team2, odds1.site, odds1.odds2)
+                    )
+                    post_bet_to_slack(
+                        bet_success_str(amount * 1-arb.percentage,
+                                        odds2.team1, odds2.site, odds2.odds1)
+                    )
                 else:
-                    post_to_slack(bet_failure_str(amount * 1-arb.percentage,
-                                                  odds2.team1, odds2.site,
-                                                  odds2.odds1))
+                    post_opp_to_slack(
+                        bet_failure_str(amount * 1-arb.percentage,
+                                        odds2.team1, odds2.site, odds2.odds1)
+                    )
             else:
-                post_to_slack(bet_failure_str(amount * arb.percentage,
-                                              odds1.team2, odds1.site,
-                                              odds1.odds2))
+                post_opp_to_slack(
+                    bet_failure_str(amount * arb.percentage,
+                                    odds1.team2, odds1.site, odds1.odds2)
+                )
     else:
         print ('[ERROR/signals.bet] Not enough arb metadata to place bet:'
                ' %s %s %s v %s %s %s\n%s'
@@ -108,7 +116,7 @@ def calculate_arb(sender, instance, **kwargs):
         None
     """
     results = instance.write_arbs(delta=5)
-    post_to_slack(format_arb_list(results))
+    post_opp_to_slack(format_arb_list(results))
 
     for arb in results:
         bet(arb, amount=0.10)

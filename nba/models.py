@@ -18,6 +18,14 @@ DK_NBA_PLAYER_NAME_MAP = {
 # Create your models here.
 
 class Team(models.Model):
+    NBA_TEAM_MAP = {
+        'SIXERS': '76ers',
+        'CAVS': 'Cavaliers',
+        'GRIZZ': 'Grizzlies',
+        'MAVS': 'Mavericks',
+        'BLAZERS': 'Trail Blazers',
+    }
+
     # From NBA.com, received as an integer
     nba_id = models.CharField(max_length=15, null=True, blank=True, unique=True)
     name = models.CharField(max_length=50, unique=True)
@@ -43,6 +51,8 @@ class Team(models.Model):
                 return team
             if city in s and name in s:
                 return team
+        if s in cls.NBA_TEAM_MAP:
+            return Team.objects.get(name=cls.NBA_TEAM_MAP[s])
         print '[WARNING/Team] Could not resolve team name: %s' % s
         return None
 
