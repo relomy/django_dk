@@ -28,14 +28,16 @@ def debug_task(self):
 TASK_SCHEDULE = {
     'write_moneylines_bookmaker': {
         'task': 'sportsbook.tasks.write_moneylines',
-        # Every minute between 4PM and 10PM
-        'schedule': crontab(hour='16,17,18,19,20,21', minute='*'),
+        # Every 15 seconds between 4PM and 10PM - the task itself handles the
+        # 4-10 timeframe
+        'schedule': timedelta(seconds=15),
         'kwargs': { 'site': 'bookmaker' },
     },
     'write_moneylines_betonline': {
         'task': 'sportsbook.tasks.write_moneylines',
-        # Every minute between 4PM and 10PM
-        'schedule': crontab(hour='16,17,18,19,20,21', minute='*'),
+        # Every 15 seconds between 4PM and 10PM - the task itself handles the
+        # 4-10 timeframe
+        'schedule': timedelta(seconds=15),
         'kwargs': { 'site': 'betonline' },
     },
 }

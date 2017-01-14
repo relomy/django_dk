@@ -1,4 +1,6 @@
 import os
+import datetime
+from pytz import timezone
 
 from celery import shared_task
 
@@ -16,6 +18,10 @@ def write_moneylines(site=''):
     """
     try:
         print '[INFO/tasks.write_moneylines] Starting task.'
+        # If current hour is not from 4PM-10PM, abort
+        if datetime.datetime.now(timezone('US/Pacific')).hour not in range(16, 22):
+            return
+
         if site == 'bookmaker':
             bm_write_moneylines(parallel=False)
         elif site == 'betonline':

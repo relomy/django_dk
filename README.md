@@ -21,6 +21,15 @@ $ python manage.py sportsbook_tasks -n write_moneylines -p betonline
 $ python manage.py bet -s betonline -p 1 -a 1
 ```
 
+#Queries
+```
+SELECT o.site, o.bet_type, o.bet_time, t1.name, o.odds1, o.pos1, t2.name,
+    o.odds2, o.pos2, o.game_id, o.prop_id
+    FROM sportsbook_odds o JOIN nba_team t1 on o.team1_id=t1.id
+    JOIN nba_team t2 on o.team2_id=t2.id
+ORDER BY bet_time;
+```
+
 #NBA Stats
 
 #Queries
