@@ -191,7 +191,7 @@ def get_moneyline(game_id):
             else:
                 return None
         except ValueError:
-            print '[WARNING/bookmaker.get_odds()]: Unable to parse odds HTML.'
+            print '[WARNING/bookmaker.get_odds]: Unable to parse odds HTML.'
             return None
 
     if not game_id:
@@ -207,16 +207,16 @@ def get_moneyline(game_id):
             if len(odds) == 1:
                 return odds[0]
             else:
-                print ('[WARNING/bookmaker.get_moneyline()]: Found %d open'
+                print ('[WARNING/bookmaker.get_moneyline]: Found %d open'
                        ' moneyline bets for %s, expected 1.'
                        % (len(odds), game_id))
                 return None
         except KeyError:
-            print ('[WARNING/bookmaker.get_moneyline()]: Unable to parse'
+            print ('[WARNING/bookmaker.get_moneyline]: Unable to parse'
                    ' response json.')
             return None
     else:
-        print '[WARNING/bookmaker.get_moneyline()]: Error calling endpoint.'
+        print '[WARNING/bookmaker.get_moneyline]: Error calling endpoint.'
         return None
 
 @shared_task

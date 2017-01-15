@@ -40,7 +40,7 @@ def add_bet(game_id, prop_id, position, amount, **kwargs):
                          '|c95d937a82d2b823582df998492428e3'),
         'lang': 'en-US/',
         'tz': 'Pacific Standard Time',
-        'selectedGame': game_id,
+        'selectedGame': str(game_id),
         'betTypeId': 'undefined',
     }
     headers = {
@@ -115,7 +115,7 @@ def place_bet(game_id, prop_id, position, amount, **kwargs):
         '_vwo_uuid_v2': 'B73D3D27F5D74E77E2F0E3BA0EFF2BD0|c95d937a82d2b823582df998492428e3',
         'lang': 'en-US/',
         'tz': 'Pacific Standard Time',
-        'selectedGame': '84617',
+        'selectedGame': str(game_id),
         'betTypeId': 'undefined',
     }
     headers = {
@@ -139,7 +139,7 @@ def place_bet(game_id, prop_id, position, amount, **kwargs):
             'propID': prop_id,
             'pos': position,
             'betAmt': amount,
-            'lcopt': 1
+            'lcopt': 0
         }
     )
     try:
