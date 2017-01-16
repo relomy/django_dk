@@ -47,7 +47,7 @@ class Team(models.Model):
         }
         for k, team in teams.iteritems():
             name, city, abbr = k
-            if s == name or s == city or s == abbr:
+            if name in s or s == city or s == abbr:
                 return team
             if city in s and name in s:
                 return team
