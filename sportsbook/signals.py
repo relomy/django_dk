@@ -28,10 +28,10 @@ def calculate_arb(sender, instance, **kwargs):
     Returns:
         None
     """
-    results = instance.write_arbs(delta=5)
-    post_opp_to_slack(format_arb_list(results))
-
-    for arb in results:
-        if arb.margin > MIN_MARGIN:
-            bet(arb, amount=0.50)
+    results = instance.write_arbs(delta=1)
+    if results:
+        post_opp_to_slack(format_arb_list(results))
+        for arb in results:
+            if arb.margin > MIN_MARGIN:
+                bet(arb, amount=0.50, parallel=True)
 

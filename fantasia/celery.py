@@ -31,14 +31,14 @@ TASK_SCHEDULE = {
         # Every 15 seconds between 4PM and 10PM - the task itself handles the
         # 4-10 timeframe
         'schedule': timedelta(seconds=15),
-        'kwargs': { 'site': 'bookmaker' },
+        'kwargs': { 'site': 'bookmaker', 'parallel': True },
     },
     'write_moneylines_betonline': {
         'task': 'sportsbook.tasks.write_moneylines',
         # Every 15 seconds between 4PM and 10PM - the task itself handles the
         # 4-10 timeframe
         'schedule': timedelta(seconds=15),
-        'kwargs': { 'site': 'betonline' },
+        'kwargs': { 'site': 'betonline', 'parallel': True },
     },
 }
 

@@ -40,7 +40,7 @@ GAMES = {
         'Connection': 'keep-alive',
         'Referer': 'https://livebetting.bookmaker.eu/ngwbet.aspx',
     },
-    # You need to pass a valid gameID, but it seem to need to be current.
+    # You need to pass a valid gameID, but it seems to not need to be current.
     'data': '{"gameID":84040}'
 }
 

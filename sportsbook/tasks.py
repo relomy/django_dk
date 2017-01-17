@@ -11,7 +11,7 @@ from sportsbook.sites.bookmaker.parser import write_moneylines as bm_write_money
 from sportsbook.sites.betonline.parser import write_moneylines as bo_write_moneylines
 
 @shared_task
-def write_moneylines(site=''):
+def write_moneylines(site='', parallel=False):
     """
     Args:
         site [str]: Website to pull moneyline odds from.
@@ -25,9 +25,9 @@ def write_moneylines(site=''):
             return
 
         if site == 'bookmaker':
-            bm_write_moneylines(parallel=False)
+            bm_write_moneylines(parallel=parallel)
         elif site == 'betonline':
-            bo_write_moneylines(parallel=False)
+            bo_write_moneylines(parallel=parallel)
         else:
             print ('[WARNING/tasks.write_moneylines]: No procedure defined for'
                    ' site %s.' % site)

@@ -1,3 +1,5 @@
+from celery import shared_task, group
+
 from sportsbook.models import *
 from sportsbook.sites.bookmaker import bettor as bm_bettor
 from sportsbook.sites.betonline import bettor as bo_bettor
@@ -29,6 +31,18 @@ def bet_failure_str(amount, team, site, odds_dec):
             % (amount, team, site, odds_dec, decimal_to_us_str(odds_dec)))
 
 def bet_arb(arb, amount=1.00):
+    """
+    Args:
+        arb [Odds/int]: Arb opportunity to bet on. Runs serially:
+                        1. Add o1 to slip
+                        2. Add o2 to slip
+                        3. Bet on o1
+                        4. Bet on o2
+        amount [float]: Amount to bet.
+    Returns:
+        [bool]: True if both bets were successfully placed, False otherwise.
+    """
+
     def add_bets(b1, b2, arb, amount):
         (b1_bettor, b1_game_id, b1_prop_id, b1_pos, b1_team, b1_odds,
          b1_site) = b1
@@ -134,7 +148,21 @@ def bet_arb(arb, amount=1.00):
                % (odds1.site, odds1.game_id, odds1.prop_id, odds2.site,
                   odds2.game_id, odds2.prop_id, arb))
 
+@shared_task
 def bet_odds(odds, amount=1.00, position=0):
+    """
+    Args:
+        odds [Odds/int]: Either an instance of an Odds object (serial) or an
+                         id of the Odds object to retrieve (parallel, so it
+                         can be serialized via Celery).
+        amount [float]: Amount to bet.
+        position [int]: Position on the bet to take (1 or 2).
+    Returns:
+        [bool]: True if the bet was successfully placed, False otherwise.
+    """
+    if type(odds) is int:
+        odds = Odds.objects.get(id=odds)
+
     bet_success = False
 
     bettor = get_bettor(odds.site)
@@ -173,6 +201,28 @@ def bet_odds(odds, amount=1.00, position=0):
                           % (odds.site, remove_result['message']))
     return bet_success
 
+def bet_arb_parallel(arb, amount=1.00):
+    """
+    Args:
+        arb [Odds/int]: Arb opportunity to bet in parallel (run both sides of
+                        the bet simultaneously).
+        amount [float]: Amount to bet.
+    Returns:
+        None (nothing of note for now)
+    """
+    if arb.option == 1:
+        group([bet_odds.s(arb.odds1.id, amount=amount * arb.percentage,
+                          position=arb.odds1.pos1),
+               bet_odds.s(arb.odds2.id, amount=amount * (1-arb.percentage),
+                          position=arb.odds2.pos2)])()
+    elif arb.option == 2:
+        group([bet_odds.s(arb.odds1.id, amount=amount * arb.percentage,
+                          position=arb.odds1.pos2),
+               bet_odds.s(arb.odds2.id, amount=amount * (1-arb.percentage),
+                          position=arb.odds2.pos1)])()
+    else:
+        return False
+
 def bet(instance, **kwargs):
     """
     Args:
@@ -183,9 +233,13 @@ def bet(instance, **kwargs):
         None
     """
     if isinstance(instance, Arb):
-        return bet_arb(instance, amount=kwargs['amount'])
+        if 'parallel' in kwargs and kwargs['parallel']:
+            return bet_arb_parallel(instance, amount=kwargs['amount'])
+        else:
+            return bet_arb(instance, amount=kwargs['amount'])
     elif isinstance(instance, Odds):
         return bet_odds(instance, amount=kwargs['amount'],
                         position=kwargs['position'])
     else:
         print '[WARNING/scripts.bet]: No bet procedure found for %s' % instance
+
