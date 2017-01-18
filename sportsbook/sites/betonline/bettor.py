@@ -32,7 +32,7 @@ USER_AGENT = ('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_5)'
 
 def add_bet(game_id, prop_id, position, amount, **kwargs):
     cookies = {
-        'ASP.NET_SessionId': os.environ['BETONLINE_SESSION_ID'],
+        'ASP.NET_SessionId': os.environ['BETONLINE_LIVE_SESSION_ID'],
         'tz': 'Eastern Standard Time',
         '__utma': '203177346.1850710465.1484177532.1484270477.1484278687.13',
         '__utmb': '203177346.1.10.1484278687',
@@ -109,7 +109,7 @@ def place_bet(game_id, prop_id, position, amount, **kwargs):
         }
     """
     cookies = {
-        'ASP.NET_SessionId': os.environ['BETONLINE_SESSION_ID'],
+        'ASP.NET_SessionId': os.environ['BETONLINE_LIVE_SESSION_ID'],
         'tz': 'Eastern Standard Time',
         '__utma': '203177346.1850710465.1484177532.1484270477.1484278687.13',
         '__utmc': '203177346',
@@ -160,7 +160,7 @@ def place_bet(game_id, prop_id, position, amount, **kwargs):
 
 def remove_bet(game_id, prop_id, position, **kwargs):
     cookies = {
-        'ASP.NET_SessionId': os.environ['BETONLINE_SESSION_ID'],
+        'ASP.NET_SessionId': os.environ['BETONLINE_LIVE_SESSION_ID'],
         'tz': 'Eastern Standard Time',
         '__utma': '203177346.574533016.1484354896.1484363206.1484365522.4',
         '__utmc': '203177346',

@@ -5,7 +5,7 @@ from sportsbook.webhooks import post_opp_to_slack
 from sportsbook.scripts.bet import bet
 
 ARB_DELTA = 5 # In seconds
-MIN_MARGIN, MAX_MARGIN = (0.05, 1.00)
+MIN_MARGIN, MAX_MARGIN = (0.01, 1.00)
 
 def format_arb_list(arbs):
     arbs = [arb for arb in arbs

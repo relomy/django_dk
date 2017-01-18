@@ -26,6 +26,11 @@ def debug_task(self):
 
 # Periodic task schedule
 TASK_SCHEDULE = {
+    'schedule_login': {
+        'task': 'sportsbook.tasks.delayed_login',
+        'schedule': timedelta(minutes=10),
+        'kwargs': { 'site': 'betonline' },
+    },
     'write_moneylines_bookmaker': {
         'task': 'sportsbook.tasks.write_moneylines',
         # Every 15 seconds between 4PM and 10PM - the task itself handles the
