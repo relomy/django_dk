@@ -21,11 +21,14 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # See https://docs.djangoproject.com/en/1.8/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.environ['SECRET_KEY']
+# SECRET_KEY = os.environ['SECRET_KEY']
+SECRET_KEY = "9lrs0=azl)-3&kia35fv9=q1l(x4zb&v#kxj0cph7j04qzdsq@"
+
+print(os.getenv("ENVIRONMENT", "Token Not found"))
 
 # SECURITY WARNING: don't run with debug turned on in production!
 # Development settings:
-if os.environ['ENVIRONMENT'] == 'development':
+if os.environ["ENVIRONMENT"] == "development":
     DEBUG = True
 # Production settings:
 else:
@@ -36,81 +39,88 @@ else:
 ALLOWED_HOSTS = []
 
 # Application definition
-
 INSTALLED_APPS = (
-    'django.contrib.admin',
-    'django.contrib.auth',
-    'django.contrib.contenttypes',
-    'django.contrib.sessions',
-    'django.contrib.messages',
-    'django.contrib.staticfiles',
-    'nba',
-    'sportsbook',
+    "django.contrib.admin",
+    "django.contrib.auth",
+    "django.contrib.contenttypes",
+    "django.contrib.sessions",
+    "django.contrib.messages",
+    "django.contrib.staticfiles",
+    "nba",
+    # 'sportsbook',
 )
 
-MIDDLEWARE_CLASSES = (
-    'django.contrib.sessions.middleware.SessionMiddleware',
-    'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
-    'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'django.contrib.auth.middleware.SessionAuthenticationMiddleware',
-    'django.contrib.messages.middleware.MessageMiddleware',
-    'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'django.middleware.security.SecurityMiddleware',
+MIDDLEWARE = (
+    "django.contrib.sessions.middleware.SessionMiddleware",
+    "django.middleware.common.CommonMiddleware",
+    "django.middleware.csrf.CsrfViewMiddleware",
+    "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "django.contrib.messages.middleware.MessageMiddleware",
+    "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "django.middleware.security.SecurityMiddleware",
 )
 
-ROOT_URLCONF = 'fantasia.urls'
+ROOT_URLCONF = "fantasia.urls"
 
 TEMPLATES = [
     {
-        'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
-        'APP_DIRS': True,
-        'OPTIONS': {
-            'context_processors': [
-                'django.template.context_processors.debug',
-                'django.template.context_processors.request',
-                'django.contrib.auth.context_processors.auth',
-                'django.contrib.messages.context_processors.messages',
+        "BACKEND": "django.template.backends.django.DjangoTemplates",
+        "DIRS": [],
+        "APP_DIRS": True,
+        "OPTIONS": {
+            "context_processors": [
+                "django.template.context_processors.debug",
+                "django.template.context_processors.request",
+                "django.contrib.auth.context_processors.auth",
+                "django.contrib.messages.context_processors.messages",
             ],
-            'debug': DEBUG,
+            "debug": DEBUG,
         },
-    },
+    }
 ]
 
-WSGI_APPLICATION = 'fantasia.wsgi.application'
+WSGI_APPLICATION = "fantasia.wsgi.application"
 
 
 # Database
 # https://docs.djangoproject.com/en/1.8/ref/settings/#databases
 
-DATABASES = {}
-DATABASES['default'] =  dj_database_url.config()
+# print(os.getenv("DATABASE_URL", "DATABASE_URL NOT FOUND"))
+# DATABASES = {}
+# DATABASES["default"] = dj_database_url.config()
+# print(DATABASES)
 
-# Celery
-CELERY_BROKER_URL = os.environ['RMQ_BROKER_URL']
-CELERY_ACCEPT_CONTENT = ['json']
-CELERY_TASK_SERIALIZER = 'json'
-CELERY_RESULT_SERIALIZER = 'json'
-#CELERY_RESULT_BACKEND='djcelery.backends.database:DatabaseBackend'
-CELERY_TIMEZONE = 'US/Pacific' # Used for job scheduling
-# Recommended settings from: https://www.cloudamqp.com/docs/celery.html
-CELERY_BROKER_POOL_LIMIT = 1 # Will decrease connection usage
-CELERY_BROKER_HEARTBEAT = None # We're using TCP keep-alive instead
-CELERY_BROKER_CONNECTION_TIMEOUT = 30 # May require a long timeout due to Linux DNS
-                                      # timeouts etc
-CELERY_SEND_EVENTS = False # Will not create celeryev.* queues
-CELERY_EVENT_QUEUE_EXPIRES = 60 # Will delete all celeryev. queues without
-                                # consumers after 1 minute.
-CELERYD_REDIRECT_STDOUTS = True
-CELERYD_REDIRECT_STDOUTS_LEVEL = 'WARNING'
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+    }
+}
+
+# # Celery
+# CELERY_BROKER_URL = os.environ['RMQ_BROKER_URL']
+# CELERY_ACCEPT_CONTENT = ['json']
+# CELERY_TASK_SERIALIZER = 'json'
+# CELERY_RESULT_SERIALIZER = 'json'
+# # CELERY_RESULT_BACKEND='djcelery.backends.database:DatabaseBackend'
+# CELERY_TIMEZONE = 'US/Pacific'  # Used for job scheduling
+# # Recommended settings from: https://www.cloudamqp.com/docs/celery.html
+# CELERY_BROKER_POOL_LIMIT = 1  # Will decrease connection usage
+# CELERY_BROKER_HEARTBEAT = None  # We're using TCP keep-alive instead
+# CELERY_BROKER_CONNECTION_TIMEOUT = 30  # May require a long timeout due to Linux DNS
+# # timeouts etc
+# CELERY_SEND_EVENTS = False  # Will not create celeryev.* queues
+# CELERY_EVENT_QUEUE_EXPIRES = 60  # Will delete all celeryev. queues without
+# # consumers after 1 minute.
+# CELERYD_REDIRECT_STDOUTS = True
+# CELERYD_REDIRECT_STDOUTS_LEVEL = 'WARNING'
 
 # Internationalization
 # https://docs.djangoproject.com/en/1.8/topics/i18n/
 
-LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = "en-us"
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = "UTC"
 
 USE_I18N = True
 
@@ -122,5 +132,5 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/1.8/howto/static-files/
 
-STATIC_ROOT = 'staticfiles'
-STATIC_URL = '/static/'
+STATIC_ROOT = "staticfiles"
+STATIC_URL = "/static/"

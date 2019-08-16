@@ -1,0 +1,9 @@
+{% if top_five_seasons %}
+    <ul>
+    {% for player in top_five_seasons %}
+        <li><a href="/nba/{{ player.nba_id }}/">{{ player.full_name }}</a> - {{ player.seasons }} seasons</li>
+    {% endfor %}
+    </ul>
+{% else %}
+    <p>No players are available.</p>
+{% endif %}

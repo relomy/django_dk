@@ -28,7 +28,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='dkcontestpayout',
             name='contest',
-            field=models.ForeignKey(related_name='payouts', to='nba.DKContest'),
+            field=models.ForeignKey(related_name='payouts', to='nba.DKContest', on_delete=models.PROTECT),
         ),
         migrations.AlterUniqueTogether(
             name='dkcontestpayout',

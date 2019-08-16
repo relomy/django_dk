@@ -8,7 +8,7 @@ from django.core.management.base import BaseCommand, CommandError
 
 class Command(BaseCommand):
 
-    CURR_SEASON = '2016-17'
+    CURR_SEASON = '2018-19'
 
     help = \
 '''
@@ -88,7 +88,7 @@ $ python manage.py fetch
             help='Dumps all DK salary CSVs to the database'
         )
         parser.add_argument('--dk-new-contests', '-nc',
-            action='store_true',
+            action='store_true', 
             dest='dk_new_contests',
             default=False,
             help='Fetch today\'s new contests from draftkings.com'

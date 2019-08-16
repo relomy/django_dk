@@ -95,7 +95,7 @@ def run(season='2015-16'):
             season_id, player_id, game_id, date, matchup, _, minutes, fgm, \
                 fga, _, fg3m, fg3a, _, ftm, fta, _, oreb, dreb, reb, ast, \
                 stl, blk, tov, pf, pts, plus_minus, _ = game_data
-            print 'Updating %s %s' % (player_id, game_id)
+            print(f"Updating {player_id} {game_id}")
             home, away = teamstr_to_teams(matchup)
             if home and away:
                 g, _ = Game.objects.update_or_create(nba_id=game_id, defaults={
@@ -116,9 +116,9 @@ def run(season='2015-16'):
                         'plus_minus': plus_minus
                     }
                 )
-                print 'Updated %s, %s' % (g, gs)
+                print(f"Updated {g}, {gs}")
             else:
-                print 'Couldn\'t parse game %s' % matchup
+                print(f"Couldn\'t parse game {matchup}") % matchup
 
     # TODO: Filter for active players
     player_ids = [p.nba_id for p in Player.objects.all()]

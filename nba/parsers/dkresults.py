@@ -63,9 +63,9 @@ def run(contest_ids=[], contest=True, resultscsv=True, resultsparse=True):
                                .find_all(class_='info-header')[0]
                                .find_all('span'))
             completed = info_header[3].string
-            print int(info_header[4].string)
+            print(int(info_header[4].string))
             if completed.strip().upper() == 'COMPLETED':
-                print 'completed'
+                print("completed")
                 DKContest.objects.update_or_create(dk_id=contest_id, defaults={
                     'name': header[0].string,
                     'total_prizes': dollars_to_decimal(header[1].string),
@@ -74,14 +74,14 @@ def run(contest_ids=[], contest=True, resultscsv=True, resultsparse=True):
                     'positions_paid': int(info_header[4].string)
                 })
             else:
-                print 'Contest %s is still in progress' % contest_id
+                print(f'Contest {contest_id} is still in progress')
         except IndexError:
             # This error occurs for old contests whose pages no longer are
             # being served.
             # Traceback:
             # header = soup.find_all(class_='top')[0].find_all('h4')
             # IndexError: list index out of range
-            print 'Couldn\'t find DK contest with id %s' % contest_id
+            print(f'Couldn\'t find DK contest with id {contest_id}')
 
     def get_contest_prize_data(contest_id):
         def place_to_number(s):
@@ -130,7 +130,7 @@ def run(contest_ids=[], contest=True, resultscsv=True, resultsparse=True):
                 )
         except IndexError:
             # See comment in get_contest_data()
-            print 'Couldn\'t find DK contest with id %s' % contest_id
+            print(f'Couldn\'t find DK contest with id {contest_id}')
 
     def get_contest_result_data(contest_id):
         url = 'https://www.draftkings.com/contest/gamecenter/%s' % contest_id
@@ -153,7 +153,7 @@ def run(contest_ids=[], contest=True, resultscsv=True, resultsparse=True):
         OUTFILE = 'out.zip'
 
         def read_response(response):
-            print 'Downloading and unzipping file from %s' % response.url
+            print(f'Downloading and unzipping file from {response.url}')
             with open(OUTFILE, 'wb') as f:
                 for chunk in response.iter_content(chunk_size=1024):
                     if chunk:
@@ -170,7 +170,7 @@ def run(contest_ids=[], contest=True, resultscsv=True, resultsparse=True):
             read_response(requests.get(export_url, headers=HEADERS))
             unzip_data()
         except zipfile.BadZipfile:
-            print 'Couldn\'t download/extract CSV zip for %s' % contest_id
+            print(f'Couldn\'t download/extract CSV zip for {contest_id}')
 
     def parse_contest_result_csv(contest_id):
         def parse_entry_name(entry_name):
@@ -187,7 +187,7 @@ def run(contest_ids=[], contest=True, resultscsv=True, resultsparse=True):
                          if p.full_name }
 
         contest, _ = DKContest.objects.get_or_create(dk_id=contest_id)
-        filename = '%s/contest-standings-%s.csv' % (CSVPATH, contest_id)
+        filename = '{}/contest-standings-{}}.csv'.format(CSVPATH, contest_id)
         try:
             with open(filename, 'r') as f:
                 csvreader = reader(f, delimiter=',', quotechar='"')
@@ -222,9 +222,9 @@ def run(contest_ids=[], contest=True, resultscsv=True, resultsparse=True):
                                 }
                             )
                     if i % 5000 == 0:
-                        print '%d DKResult records created' % i
+                        print(f"{i} DKResult records created")
         except IOError:
-            print 'Couldn\'t find CSV results file %s' % filename
+            print(f"Couldn\'t find CSV results file {filename}")
 
     for contest_id in contest_ids:
         if contest:

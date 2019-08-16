@@ -17,6 +17,7 @@ DK_NBA_PLAYER_NAME_MAP = {
 
 # Create your models here.
 
+
 class Team(models.Model):
     NBA_TEAM_MAP = {
         'SIXERS': '76ers',
@@ -53,18 +54,22 @@ class Team(models.Model):
                 return team
         if s in cls.NBA_TEAM_MAP:
             return Team.objects.get(name=cls.NBA_TEAM_MAP[s])
-        print '[WARNING/Team] Could not resolve team name: %s' % s
+        print('[WARNING/Team] Could not resolve team name: {}'.format(s))
         return None
 
     def __unicode__(self):
         return self.full_name
+    
+    def __str__(self):
+        return self.name
+
 
 class Player(models.Model):
     # From NBA.com, received as an integer
     nba_id = models.CharField(max_length=15, null=True, blank=True, unique=True)
     first_name = models.CharField(max_length=30, null=True, blank=True)
     last_name = models.CharField(max_length=50, null=True, blank=True)
-    team = models.ForeignKey(Team, related_name='players', null=True, blank=True)
+    team = models.ForeignKey(Team, related_name='players', null=True, blank=True, on_delete=models.PROTECT)
     position = models.CharField(max_length=20, null=True, blank=True)
     dk_position = models.CharField(max_length=2, null=True, blank=True)
     height = models.PositiveIntegerField(null=True, blank=True)
@@ -126,11 +131,11 @@ class Player(models.Model):
         if len(players) == 1:
             return players[0]
         elif len(players) == 0:
-            print 'Player %s does not exist' % name
+            print('Player {} does not exist'.format(name))
             raise cls.DoesNotExist
         else:
-            print ('Multiple players named %s found (%s)'
-                   % (name, ', '.join(players)))
+            print('Multiple players named %s found (%s)'
+                  % (name, ', '.join(players)))
             raise cls.MultipleObjectsReturned
 
     @classmethod
@@ -139,11 +144,11 @@ class Player(models.Model):
         try:
             return cls.objects.get(first_name__iexact=first_name,
                                    last_name__iexact=last_name)
-        except cls.DoesNotExist, cls.MultipleObjectsReturned:
+        except (cls.DoesNotExist, cls.MultipleObjectsReturned) as e:
             try:
                 return cls.objects.get(first_name__contains=first_name,
                                        last_name__contains=last_name)
-            except cls.DoesNotExist, cls.MultipleObjectsReturned:
+            except (cls.DoesNotExist, cls.MultipleObjectsReturned) as e:
                 return cls.get_by_name_slow(name)
 
     def get_dkpoints(self, date):
@@ -174,9 +179,9 @@ class Player(models.Model):
         """
         try:
             gs = GameStats.objects.get(game__date=date, player=self)
-            return { stat: getattr(gs, stat) for stat in stats }
+            return {stat: getattr(gs, stat) for stat in stats}
         except GameStats.DoesNotExist:
-            return { stat: 0.0 for stat in stats }
+            return {stat: 0.0 for stat in stats}
 
     def get_salary(self, date):
         try:
@@ -186,16 +191,20 @@ class Player(models.Model):
 
     def __unicode__(self):
         return self.full_name
+    
+    def __str__(self):
+        return self.full_name
+
 
 class Game(models.Model):
     # From NBA.com
     nba_id = models.CharField(max_length=15, null=True, blank=True, unique=True)
-    home_team = models.ForeignKey(Team, related_name='home_games')
-    away_team = models.ForeignKey(Team, related_name='away_games')
+    home_team = models.ForeignKey(Team, related_name='home_games', on_delete=models.PROTECT)
+    away_team = models.ForeignKey(Team, related_name='away_games', on_delete=models.PROTECT)
     date = models.DateField()
     home_score = models.PositiveIntegerField(null=True, blank=True)
     away_score = models.PositiveIntegerField(null=True, blank=True)
-    winner = models.ForeignKey(Team, null=True, blank=True, related_name='won_games')
+    winner = models.ForeignKey(Team, null=True, blank=True, related_name='won_games', on_delete=models.PROTECT)
     season_id = models.CharField(max_length=15, null=True, blank=True)
     season = models.CharField(max_length=9, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -207,6 +216,7 @@ class Game(models.Model):
     def __unicode__(self):
         return ('%s @ %s %s'
                 % (self.away_team.abbr, self.home_team.abbr, self.date))
+
 
 class GameStats(models.Model):
     """
@@ -221,8 +231,8 @@ class GameStats(models.Model):
     pts: Points
     plus_minus: Plus/minus
     """
-    game = models.ForeignKey(Game, related_name='game_stats')
-    player = models.ForeignKey(Player, related_name='game_stats')
+    game = models.ForeignKey(Game, related_name='game_stats', on_delete=models.PROTECT)
+    player = models.ForeignKey(Player, related_name='game_stats', on_delete=models.PROTECT)
     min = models.PositiveIntegerField(null=True, blank=True)
     fgm = models.PositiveIntegerField(null=True, blank=True)
     fga = models.PositiveIntegerField(null=True, blank=True)
@@ -285,8 +295,9 @@ class GameStats(models.Model):
     def __unicode__(self):
         return ('%s %s' % (unicode(self.player), unicode(self.game)))
 
+
 class Injury(models.Model):
-    player = models.ForeignKey(Player, related_name='injuries')
+    player = models.ForeignKey(Player, related_name='injuries', on_delete=models.PROTECT)
     status = models.CharField(max_length=50)
     date = models.DateField()
     comment = models.CharField(max_length=500, null=True, blank=True)
@@ -296,6 +307,7 @@ class Injury(models.Model):
 
     def __unicode__(self):
         return '%s %s %s' % (unicode(self.player), self.status, self.date)
+
 
 class DKContest(models.Model):
     dk_id = models.CharField(max_length=15, unique=True)
@@ -311,8 +323,9 @@ class DKContest(models.Model):
     def __unicode__(self):
         return '%s %s' % (self.name, self.date)
 
+
 class DKContestPayout(models.Model):
-    contest = models.ForeignKey(DKContest, related_name='payouts')
+    contest = models.ForeignKey(DKContest, related_name='payouts', on_delete=models.PROTECT)
     upper_rank = models.PositiveIntegerField()
     lower_rank = models.PositiveIntegerField()
     payout = models.DecimalField(max_digits=18, decimal_places=2)
@@ -324,20 +337,21 @@ class DKContestPayout(models.Model):
         return ('%s (%s - %s: %s)' %
                 (self.contest, self.upper_rank, self.lower_rank, self.payout))
 
+
 class DKResult(models.Model):
-    contest = models.ForeignKey(DKContest, related_name='results')
+    contest = models.ForeignKey(DKContest, related_name='results', on_delete=models.PROTECT)
     dk_id = models.CharField(max_length=15, unique=True)
     name = models.CharField(max_length=50)
     rank = models.PositiveIntegerField()
     points = models.FloatField()
-    pg = models.ForeignKey(Player, related_name='dk_pg_results')
-    sg = models.ForeignKey(Player, related_name='dk_sg_results')
-    sf = models.ForeignKey(Player, related_name='dk_sf_results')
-    pf = models.ForeignKey(Player, related_name='dk_pf_results')
-    c = models.ForeignKey(Player, related_name='dk_c_results')
-    g = models.ForeignKey(Player, related_name='dk_g_results')
-    f = models.ForeignKey(Player, related_name='dk_f_results')
-    util = models.ForeignKey(Player, related_name='dk_util_results')
+    pg = models.ForeignKey(Player, related_name='dk_pg_results', on_delete=models.PROTECT)
+    sg = models.ForeignKey(Player, related_name='dk_sg_results', on_delete=models.PROTECT)
+    sf = models.ForeignKey(Player, related_name='dk_sf_results', on_delete=models.PROTECT)
+    pf = models.ForeignKey(Player, related_name='dk_pf_results', on_delete=models.PROTECT)
+    c = models.ForeignKey(Player, related_name='dk_c_results', on_delete=models.PROTECT)
+    g = models.ForeignKey(Player, related_name='dk_g_results', on_delete=models.PROTECT)
+    f = models.ForeignKey(Player, related_name='dk_f_results', on_delete=models.PROTECT)
+    util = models.ForeignKey(Player, related_name='dk_util_results', on_delete=models.PROTECT)
 
     def get_lineup(self):
         return [self.pg, self.sg, self.sf, self.pf, self.c, self.g, self.f,
@@ -352,8 +366,9 @@ class DKResult(models.Model):
     def __unicode__(self):
         return '%s %s' % (unicode(self.contest), unicode(self.rank))
 
+
 class DKSalary(models.Model):
-    player = models.ForeignKey(Player, related_name='dk_salaries')
+    player = models.ForeignKey(Player, related_name='dk_salaries', on_delete=models.PROTECT)
     date = models.DateField(null=True, blank=True)
     salary = models.PositiveIntegerField()
 

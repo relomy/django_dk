@@ -35,5 +35,5 @@ def run():
                 try:
                     player = Player.get_by_name(name)
                 except Player.DoesNotExist:
-                    print 'Couldn\'t find player %s' % name
+                    print(f"Couldn\'t find player {name}")
 

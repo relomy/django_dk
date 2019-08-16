@@ -45,7 +45,7 @@ class Migration(migrations.Migration):
                 ('pf', models.PositiveIntegerField(null=True, blank=True)),
                 ('pts', models.PositiveIntegerField(null=True, blank=True)),
                 ('plus_minus', models.PositiveIntegerField(null=True, blank=True)),
-                ('game_id', models.ForeignKey(related_name='game_stats', to='nba.Game')),
+                ('game_id', models.ForeignKey(related_name='game_stats', to='nba.Game', on_delete=models.PROTECT)),
             ],
         ),
         migrations.CreateModel(
@@ -84,26 +84,26 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='player',
             name='team',
-            field=models.ForeignKey(related_name='players', blank=True, to='nba.Team', null=True),
+            field=models.ForeignKey(related_name='players', blank=True, to='nba.Team', null=True, on_delete=models.PROTECT),
         ),
         migrations.AddField(
             model_name='gamestats',
             name='player_id',
-            field=models.ForeignKey(related_name='game_stats', to='nba.Player'),
+            field=models.ForeignKey(related_name='game_stats', to='nba.Player', on_delete=models.PROTECT),
         ),
         migrations.AddField(
             model_name='game',
             name='away_team',
-            field=models.ForeignKey(related_name='away_games', to='nba.Team'),
+            field=models.ForeignKey(related_name='away_games', to='nba.Team', on_delete=models.PROTECT),
         ),
         migrations.AddField(
             model_name='game',
             name='home_team',
-            field=models.ForeignKey(related_name='home_games', to='nba.Team'),
+            field=models.ForeignKey(related_name='home_games', to='nba.Team', on_delete=models.PROTECT),
         ),
         migrations.AddField(
             model_name='game',
             name='winner',
-            field=models.ForeignKey(related_name='won_games', blank=True, to='nba.Team', null=True),
+            field=models.ForeignKey(related_name='won_games', blank=True, to='nba.Team', null=True, on_delete=models.PROTECT),
         ),
     ]

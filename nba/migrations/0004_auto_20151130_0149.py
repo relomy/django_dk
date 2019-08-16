@@ -18,7 +18,7 @@ class Migration(migrations.Migration):
                 ('status', models.CharField(max_length=50)),
                 ('date', models.DateField()),
                 ('comment', models.CharField(max_length=500, null=True, blank=True)),
-                ('player', models.ForeignKey(related_name='injuries', to='nba.Player')),
+                ('player', models.ForeignKey(related_name='injuries', to='nba.Player', on_delete=models.PROTECT)),
             ],
         ),
         migrations.AlterUniqueTogether(

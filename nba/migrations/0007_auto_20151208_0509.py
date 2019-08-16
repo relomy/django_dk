@@ -17,7 +17,7 @@ class Migration(migrations.Migration):
                 ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
                 ('date', models.DateField(null=True, blank=True)),
                 ('salary', models.PositiveIntegerField()),
-                ('player', models.ForeignKey(related_name='dk_salaries', to='nba.Player')),
+                ('player', models.ForeignKey(related_name='dk_salaries', to='nba.Player', on_delete=models.PROTECT)),
             ],
         ),
         migrations.AlterUniqueTogether(

@@ -56,11 +56,10 @@ def get_empty_contest_ids():
     contests = DKContest.objects.filter(date__gte=last)
     for contest in contests:
         num_results = contest.results.count()
-        print ('%d entries expected for %s, %d found'
-               % (contest.entries, contest.name, num_results))
+        print("{} entries expected for {}, {} found".format(contest.entries, contest.name, num_results))
         if num_results == 0:
             contest_ids.append(contest.dk_id)
-    print 'Contest ids: %s' % ', '.join(contest_ids)
+    print("Contest ids: {}".format(', '.join(contest_ids)))
     return contest_ids
 
 def get_contest_ids(limit=1, entry_fee=None):
@@ -74,14 +73,14 @@ def get_contest_ids(limit=1, entry_fee=None):
     contests = (DKContest.objects.filter(date__gte=last, entry_fee=entry_fee)
                 if entry_fee else DKContest.objects.filter(date__gte=last))
     contest_ids = [contest.dk_id for contest in contests]
-    print 'Contest ids: %s' % ', '.join(contest_ids)
+    print("Contest ids: {}".format(', '.join(contest_ids)))
     return contest_ids
 
 class Timer:
     @classmethod
     def log_elapsed_time(cls, s, prev_time):
         curr_time = time.time()
-        print '[Elapsed time] %s: %f' % (s, curr_time - prev_time)
+        print("[Elapsed time] {}: {}".format(s, curr_time - prev_time))
         return curr_time
 
 

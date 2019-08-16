@@ -118,7 +118,7 @@ def write_salaries_to_db(input_rows, date=datetime.date.today()):
                            ' Ignoring - did not overwrite' % player)
                 return_rows.append(row)
     except UnicodeEncodeError as e:
-        print e
+        print(e)
         return []
     return return_rows
 
@@ -132,7 +132,7 @@ def dump_csvs():
     files = [os.path.join(CSVPATH, f) for f in os.listdir(CSVPATH)
              if os.path.isfile(os.path.join(CSVPATH, f))]
     for filename in files:
-        print 'Writing salaries for %s' % filename
+        print(f"Writing salaries for {filename}")
         with open(filename, 'r') as f:
             datestr = re.findall(FILE_DATETIME_REGEX, filename)[0]
             date = datetime.datetime.strptime(datestr, '%Y_%m_%d').date()
@@ -172,7 +172,7 @@ def run(writecsv=True):
         # Lists are unhashable so convert each element to a tuple
         rows = sorted(list(set([tuple(r) for r in rows])),
                       key=lambda x: (-int(x[2]), x[1]))
-        print 'Writing salaries to csv %s' % outfile
+        print(f"Writing salaries to csv {outfile}")
         with open(outfile, 'w') as f:
             csvwriter = writer(f, delimiter=',', quotechar='"')
             csvwriter.writerow(HEADER_ROW)
@@ -202,8 +202,7 @@ def run(writecsv=True):
         # not be the same for the rare long-running contest) and should be the
         # date we're looking for (game date in US time).
         date = get_salary_date(response['DraftGroups'])
-        print ('Updating salaries for draft group %d, contest type %d, date %s'
-               % (dg['DraftGroupId'], dg['ContestTypeId'], date))
+        print('Updating salaries for draft group {}, contest type {}, date {}'.format(dg['DraftGroupId'], dg['ContestTypeId'], date))
         row = get_salary_csv(dg['DraftGroupId'], dg['ContestTypeId'], date)
         if date not in rows_by_date:
             rows_by_date[date] = []

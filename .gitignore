@@ -1,4 +1,10 @@
-venv
+
+.vscode/
+
+Pipfile.lock
+db.sqlite3
+
+.env
 *.swp
 *.pyc
 .DS_Store

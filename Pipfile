@@ -1,0 +1,33 @@
+[[source]]
+name = "pypi"
+url = "https://pypi.org/simple"
+verify_ssl = true
+
+[[source]]
+url = "https://www.piwheels.org/simple"
+name = "piwheels"
+verify_ssl = true
+
+[packages]
+amqp = "*"
+beautifulsoup4 = "*"
+billiard = "*"
+celery = "*"
+dj-database-url = "*"
+Django = "*"
+html5lib = "*"
+kombu = "*"
+numpy = "*"
+psycopg2 = "*"
+pytz = "*"
+requests = "*"
+scipy = "*"
+scikit-learn = "*"
+six = "*"
+wheel = "*"
+
+[dev-packages]
+black = "*"
+
+[requires]
+python_version = "3.7"
