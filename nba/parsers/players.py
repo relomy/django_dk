@@ -4,8 +4,8 @@ import requests
 from time import sleep
 from nba.models import Team, Player
 
-def run(season='2018-19', player_name=None):
 
+def run(season="2018-19", player_name=None):
     def parse_players(player_name=None):
         """
         Format: {
@@ -45,27 +45,24 @@ def run(season='2018-19', player_name=None):
 
         def parse_player_name(display_name):
             """'[Last], [First]' -> '[First] [Last]'"""
-            name_arr = [x.strip() for x in display_name.split(',')]
+            name_arr = [x.strip() for x in display_name.split(",")]
             last, first = name_arr[0], name_arr[1:]
             return f"{' '.join(first)} {last}"
 
-        URL = 'http://stats.nba.com/stats/commonallplayers'
+        URL = "http://stats.nba.com/stats/commonallplayers"
         # 1/25/2016 - NBA.com now requires ordered params
-        PARAMS = (
-            ('IsOnlyCurrentSeason', 1),
-            ('LeagueID', '00'),
-            ('Season', season),
-        )
+        PARAMS = (("IsOnlyCurrentSeason", 1), ("LeagueID", "00"), ("Season", season))
         # HEADERS = { 'user-agent': os.environ['USER_AGENT'] }
-        HEADERS = { 'user-agent': os.getenv("USER_AGENT") }
+        HEADERS = {"user-agent": os.getenv("USER_AGENT")}
 
         response = requests.get(URL, params=PARAMS, headers=HEADERS)
         player_ids = []
-        json = response.json()['resultSets'][0]['rowSet']
+        json = response.json()["resultSets"][0]["rowSet"]
         for player_data in json:
-            player_id, display_name, _, _, _, _, _, team_id, team_city, \
-                team_name, team_abbr, _, _, _ = player_data
-            
+            player_id, display_name, _, _, _, _, _, team_id, team_city, team_name, team_abbr, _, _, _ = (
+                player_data
+            )
+
             if player_name:
                 if parse_player_name(display_name) == player_name:
                     player_ids.append(player_id)
@@ -73,16 +70,21 @@ def run(season='2018-19', player_name=None):
                 # only append player if team_id is not blank
 
                 # update team
-                if team_id and team_id != '':
-                    Team.objects.update_or_create(nba_id=str(team_id), defaults={
-                        'name': team_name,
-                        'abbr': team_abbr,
-                        'city': team_city
-                    })
+                if team_id and team_id != "":
+                    Team.objects.update_or_create(
+                        nba_id=str(team_id),
+                        defaults={
+                            "name": team_name,
+                            "abbr": team_abbr,
+                            "city": team_city,
+                        },
+                    )
                     player_ids.append(player_id)
                 else:
-                    print(f"Player {display_name} [id: {player_id}] not found on a team (id: {team_id} name: {team_name})")
-                
+                    print(
+                        f"Player {display_name} [id: {player_id}] not found on a team (id: {team_id} name: {team_name})"
+                    )
+
         return player_ids
 
     def parse_player(player_id):
@@ -144,7 +146,7 @@ def run(season='2018-19', player_name=None):
             @return [int]: Height in inches
             """
             if heightstr:
-                feet, inches = [int(x) for x in heightstr.split('-')]
+                feet, inches = [int(x) for x in heightstr.split("-")]
                 return feet * 12 + inches
             return None
 
@@ -153,40 +155,41 @@ def run(season='2018-19', player_name=None):
             @param d [str]: "YYYY-MM-DDTHH:MM:SS" (e.g. 1988-03-14T00:00:00)
             @return [datetime.date]
             """
-            return datetime.datetime.strptime(d, '%Y-%m-%dT%H:%M:%S').date()
+            return datetime.datetime.strptime(d, "%Y-%m-%dT%H:%M:%S").date()
 
-        URL = 'http://stats.nba.com/stats/commonplayerinfo'
+        URL = "http://stats.nba.com/stats/commonplayerinfo"
         # 1/25/2016 - NBA.com now requires ordered params
         PARAMS = (
-            ('LeagueID', '00'),
-            ('PlayerID', player_id),
-            ('SeasonType', 'Regular Season'),
+            ("LeagueID", "00"),
+            ("PlayerID", player_id),
+            ("SeasonType", "Regular Season"),
         )
-        HEADERS = { 'user-agent': os.environ['USER_AGENT'] }
+        HEADERS = {"user-agent": os.environ["USER_AGENT"]}
 
         response = requests.get(URL, params=PARAMS, headers=HEADERS)
-        player_data = response.json()['resultSets'][0]['rowSet'][0]
-        player_id, first_name, last_name, _, _, _, birthdate, school, \
-            country, _, height, weight, seasons, number, position, _, \
-            team_id, _, _, _, _, _, from_year, to_year, _, _, _, _, _, _ \
-            = player_data
+        player_data = response.json()["resultSets"][0]["rowSet"][0]
+        player_id, first_name, last_name, _, _, _, birthdate, school, country, _, height, weight, seasons, number, position, _, team_id, _, _, _, _, _, from_year, to_year, _, _, _, _, _, _ = (
+            player_data
+        )
         print(f"Updating {player_id}")
-        p, _ = Player.objects.update_or_create(nba_id=player_id, defaults={
-            'first_name': first_name,
-            'last_name': last_name,
-            'team': Team.objects.get(nba_id=team_id),
-            'position': position,
-            'height': height_to_int(height),
-            'weight': weight_to_int(weight),
-            'birthdate': datestr_to_date(birthdate),
-            'school': school,
-            'country': country,
-            'start_year': from_year,
-            'end_year': to_year,
-            'seasons': seasons
-        })
+        p, _ = Player.objects.update_or_create(
+            nba_id=player_id,
+            defaults={
+                "first_name": first_name,
+                "last_name": last_name,
+                "team": Team.objects.get(nba_id=team_id),
+                "position": position,
+                "height": height_to_int(height),
+                "weight": weight_to_int(weight),
+                "birthdate": datestr_to_date(birthdate),
+                "school": school,
+                "country": country,
+                "start_year": from_year,
+                "end_year": to_year,
+                "seasons": seasons,
+            },
+        )
         print(f"Updated {p}")
-
 
     # player_name=None by default, which gets all player ids
     player_ids = parse_players(player_name=player_name)

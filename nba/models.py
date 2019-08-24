@@ -120,7 +120,11 @@ class Player(models.Model):
                     and (int_last in arg_last or arg_last in int_last))
 
         try:
-            name = unicode(name, encoding='utf-8')
+            # unicode() is not available in python3
+            # name = unicode(name, encoding='utf-8')
+            # this doesn't work
+            # name = name.encode()
+            name = name
         except TypeError:
             pass
         # Order matters. name_in_dict should catch UnicodeDecodeErrors

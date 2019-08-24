@@ -9,6 +9,8 @@ name = "piwheels"
 verify_ssl = true
 
 [packages]
+browsercookie = {hg = "https://bitbucket.org/richardpenman/browsercookie/"}
+pywin32 = {version = "*",sys_platform = "== 'win32'"}
 amqp = "*"
 beautifulsoup4 = "*"
 billiard = "*"
@@ -27,7 +29,12 @@ six = "*"
 wheel = "*"
 
 [dev-packages]
+rope = "*"
 black = "*"
+pylint = "*"
 
 [requires]
 python_version = "3.7"
+
+[pipenv]
+allow_prereleases = true
