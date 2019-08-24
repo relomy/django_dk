@@ -4,15 +4,15 @@ from django.db import models
 
 # Maps DK player full names to NBA.com full names
 DK_NBA_PLAYER_NAME_MAP = {
-    'Denis Schroder': 'Dennis Schroder',
-    u'José Calderón': 'Jose Calderon',
-    'Chuck Hayes': 'Charles Hayes',
-    u'Manu Ginóbili': 'Manu Ginobili',
-    'J.J. Barea': 'Jose Juan Barea',
-    u'Cristiano Felício': 'Cristiano Felicio',
-    u'Kevin Martín': 'Kevin Martin',
-    u'André Miller': 'Andre Miller',
-    u'Danté Exum': 'Dante Exum',
+    "Denis Schroder": "Dennis Schroder",
+    u"José Calderón": "Jose Calderon",
+    "Chuck Hayes": "Charles Hayes",
+    u"Manu Ginóbili": "Manu Ginobili",
+    "J.J. Barea": "Jose Juan Barea",
+    u"Cristiano Felício": "Cristiano Felicio",
+    u"Kevin Martín": "Kevin Martin",
+    u"André Miller": "Andre Miller",
+    u"Danté Exum": "Dante Exum",
 }
 
 # Create your models here.
@@ -20,11 +20,11 @@ DK_NBA_PLAYER_NAME_MAP = {
 
 class Team(models.Model):
     NBA_TEAM_MAP = {
-        'SIXERS': '76ers',
-        'CAVS': 'Cavaliers',
-        'GRIZZ': 'Grizzlies',
-        'MAVS': 'Mavericks',
-        'BLAZERS': 'Trail Blazers',
+        "SIXERS": "76ers",
+        "CAVS": "Cavaliers",
+        "GRIZZ": "Grizzlies",
+        "MAVS": "Mavericks",
+        "BLAZERS": "Trail Blazers",
     }
 
     # From NBA.com, received as an integer
@@ -37,7 +37,7 @@ class Team(models.Model):
 
     @property
     def full_name(self):
-        return '%s %s' % (self.city, self.name)
+        return "%s %s" % (self.city, self.name)
 
     @classmethod
     def get_by_name(cls, s):
@@ -54,12 +54,12 @@ class Team(models.Model):
                 return team
         if s in cls.NBA_TEAM_MAP:
             return Team.objects.get(name=cls.NBA_TEAM_MAP[s])
-        print('[WARNING/Team] Could not resolve team name: {}'.format(s))
+        print("[WARNING/Team] Could not resolve team name: {}".format(s))
         return None
 
     def __unicode__(self):
         return self.full_name
-    
+
     def __str__(self):
         return self.name
 
@@ -69,7 +69,9 @@ class Player(models.Model):
     nba_id = models.CharField(max_length=15, null=True, blank=True, unique=True)
     first_name = models.CharField(max_length=30, null=True, blank=True)
     last_name = models.CharField(max_length=50, null=True, blank=True)
-    team = models.ForeignKey(Team, related_name='players', null=True, blank=True, on_delete=models.PROTECT)
+    team = models.ForeignKey(
+        Team, related_name="players", null=True, blank=True, on_delete=models.PROTECT
+    )
     position = models.CharField(max_length=20, null=True, blank=True)
     dk_position = models.CharField(max_length=2, null=True, blank=True)
     height = models.PositiveIntegerField(null=True, blank=True)
@@ -87,13 +89,13 @@ class Player(models.Model):
 
     @property
     def full_name(self):
-        return ' '.join([n for n in [self.first_name, self.last_name] if n])
+        return " ".join([n for n in [self.first_name, self.last_name] if n])
 
     @classmethod
     def __get_first_last_name(cls, name):
-        stripped = name.replace('.', '').split(' ')
+        stripped = name.replace(".", "").split(" ")
         first_name = stripped[0]
-        last_name = ' '.join(stripped[1:])
+        last_name = " ".join(stripped[1:])
         return (first_name, last_name)
 
     @classmethod
@@ -103,21 +105,22 @@ class Player(models.Model):
     @classmethod
     def get_by_name_slow(cls, name):
         def name_in_dict(int_name, arg_name):
-            return (arg_name in DK_NBA_PLAYER_NAME_MAP
-                    and int_name == DK_NBA_PLAYER_NAME_MAP[arg_name])
+            return (
+                arg_name in DK_NBA_PLAYER_NAME_MAP
+                and int_name == DK_NBA_PLAYER_NAME_MAP[arg_name]
+            )
 
         def name_equals(int_name, arg_name):
-            int_new = int_name.replace('.', '').lower().strip()
-            arg_new = arg_name.replace('.', '').lower().strip()
-            return (int_new == arg_new
-                    or int_new in arg_new
-                    or arg_new in int_new)
+            int_new = int_name.replace(".", "").lower().strip()
+            arg_new = arg_name.replace(".", "").lower().strip()
+            return int_new == arg_new or int_new in arg_new or arg_new in int_new
 
         def name_contains(int_name, arg_name):
             int_first, int_last = cls.__get_first_last_name(int_name)
             arg_first, arg_last = cls.__get_first_last_name(arg_name)
-            return ((int_first in arg_first or arg_first in int_first)
-                    and (int_last in arg_last or arg_last in int_last))
+            return (int_first in arg_first or arg_first in int_first) and (
+                int_last in arg_last or arg_last in int_last
+            )
 
         try:
             # unicode() is not available in python3
@@ -128,30 +131,34 @@ class Player(models.Model):
         except TypeError:
             pass
         # Order matters. name_in_dict should catch UnicodeDecodeErrors
-        players = [p for p in cls.objects.all()
-                   if name_in_dict(p.full_name, name)
-                   or name_equals(p.full_name, name)
-                   or name_contains(p.full_name, name)]
+        players = [
+            p
+            for p in cls.objects.all()
+            if name_in_dict(p.full_name, name)
+            or name_equals(p.full_name, name)
+            or name_contains(p.full_name, name)
+        ]
         if len(players) == 1:
             return players[0]
         elif len(players) == 0:
-            print('Player {} does not exist'.format(name))
+            print("Player {} does not exist".format(name))
             raise cls.DoesNotExist
         else:
-            print('Multiple players named %s found (%s)'
-                  % (name, ', '.join(players)))
+            print("Multiple players named %s found (%s)" % (name, ", ".join(players)))
             raise cls.MultipleObjectsReturned
 
     @classmethod
     def get_by_name(cls, name):
         first_name, last_name = cls.__get_first_last_name(name)
         try:
-            return cls.objects.get(first_name__iexact=first_name,
-                                   last_name__iexact=last_name)
+            return cls.objects.get(
+                first_name__iexact=first_name, last_name__iexact=last_name
+            )
         except (cls.DoesNotExist, cls.MultipleObjectsReturned) as e:
             try:
-                return cls.objects.get(first_name__contains=first_name,
-                                       last_name__contains=last_name)
+                return cls.objects.get(
+                    first_name__contains=first_name, last_name__contains=last_name
+                )
             except (cls.DoesNotExist, cls.MultipleObjectsReturned) as e:
                 return cls.get_by_name_slow(name)
 
@@ -195,7 +202,7 @@ class Player(models.Model):
 
     def __unicode__(self):
         return self.full_name
-    
+
     def __str__(self):
         return self.full_name
 
@@ -203,23 +210,28 @@ class Player(models.Model):
 class Game(models.Model):
     # From NBA.com
     nba_id = models.CharField(max_length=15, null=True, blank=True, unique=True)
-    home_team = models.ForeignKey(Team, related_name='home_games', on_delete=models.PROTECT)
-    away_team = models.ForeignKey(Team, related_name='away_games', on_delete=models.PROTECT)
+    home_team = models.ForeignKey(
+        Team, related_name="home_games", on_delete=models.PROTECT
+    )
+    away_team = models.ForeignKey(
+        Team, related_name="away_games", on_delete=models.PROTECT
+    )
     date = models.DateField()
     home_score = models.PositiveIntegerField(null=True, blank=True)
     away_score = models.PositiveIntegerField(null=True, blank=True)
-    winner = models.ForeignKey(Team, null=True, blank=True, related_name='won_games', on_delete=models.PROTECT)
+    winner = models.ForeignKey(
+        Team, null=True, blank=True, related_name="won_games", on_delete=models.PROTECT
+    )
     season_id = models.CharField(max_length=15, null=True, blank=True)
     season = models.CharField(max_length=9, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        unique_together = ('home_team', 'away_team', 'date')
+        unique_together = ("home_team", "away_team", "date")
 
     def __unicode__(self):
-        return ('%s @ %s %s'
-                % (self.away_team.abbr, self.home_team.abbr, self.date))
+        return "%s @ %s %s" % (self.away_team.abbr, self.home_team.abbr, self.date)
 
 
 class GameStats(models.Model):
@@ -235,8 +247,11 @@ class GameStats(models.Model):
     pts: Points
     plus_minus: Plus/minus
     """
-    game = models.ForeignKey(Game, related_name='game_stats', on_delete=models.PROTECT)
-    player = models.ForeignKey(Player, related_name='game_stats', on_delete=models.PROTECT)
+
+    game = models.ForeignKey(Game, related_name="game_stats", on_delete=models.PROTECT)
+    player = models.ForeignKey(
+        Player, related_name="game_stats", on_delete=models.PROTECT
+    )
     min = models.PositiveIntegerField(null=True, blank=True)
     fgm = models.PositiveIntegerField(null=True, blank=True)
     fga = models.PositiveIntegerField(null=True, blank=True)
@@ -283,34 +298,41 @@ class GameStats(models.Model):
             (MAX 1 PER PLAYER: Points, Rebounds, Assists, Blocks, Steals)
         """
         doubles = [
-            x for x in [self.pts, self.reb, self.ast, self.blk, self.stl]
-            if x >= 10
+            x for x in [self.pts, self.reb, self.ast, self.blk, self.stl] if x >= 10
         ]
-        points = (1.0 * self.pts + 0.5 * self.fg3m + 1.25 * self.reb
-                  + 1.5 * self.ast + 2.0 * self.stl + 2.0 * self.blk
-                  + -0.5 * self.tov)
+        points = (
+            1.0 * self.pts
+            + 0.5 * self.fg3m
+            + 1.25 * self.reb
+            + 1.5 * self.ast
+            + 2.0 * self.stl
+            + 2.0 * self.blk
+            + -0.5 * self.tov
+        )
         points += 1.5 if len(doubles) >= 2 else 0.0
         points += 3.0 if len(doubles) >= 3 else 0.0
         return points
 
     class Meta:
-        unique_together = ('game', 'player')
+        unique_together = ("game", "player")
 
     def __unicode__(self):
-        return ('%s %s' % (unicode(self.player), unicode(self.game)))
+        return "%s %s" % (unicode(self.player), unicode(self.game))
 
 
 class Injury(models.Model):
-    player = models.ForeignKey(Player, related_name='injuries', on_delete=models.PROTECT)
+    player = models.ForeignKey(
+        Player, related_name="injuries", on_delete=models.PROTECT
+    )
     status = models.CharField(max_length=50)
     date = models.DateField()
     comment = models.CharField(max_length=500, null=True, blank=True)
 
     class Meta:
-        unique_together = ('player', 'date', 'comment')
+        unique_together = ("player", "date", "comment")
 
     def __unicode__(self):
-        return '%s %s %s' % (unicode(self.player), self.status, self.date)
+        return "%s %s %s" % (unicode(self.player), self.status, self.date)
 
 
 class DKContest(models.Model):
@@ -318,66 +340,92 @@ class DKContest(models.Model):
     date = models.DateField(null=True, blank=True)
     datetime = models.DateTimeField(null=True, blank=True)
     name = models.CharField(max_length=100, null=True, blank=True)
-    total_prizes = models.DecimalField(max_digits=18, decimal_places=2,
-                                       null=True, blank=True)
+    total_prizes = models.DecimalField(
+        max_digits=18, decimal_places=2, null=True, blank=True
+    )
     entries = models.PositiveIntegerField(null=True, blank=True)
     entry_fee = models.FloatField(null=True, blank=True)
     positions_paid = models.PositiveIntegerField(null=True, blank=True)
 
     def __unicode__(self):
-        return '%s %s' % (self.name, self.date)
+        return "%s %s" % (self.name, self.date)
 
 
 class DKContestPayout(models.Model):
-    contest = models.ForeignKey(DKContest, related_name='payouts', on_delete=models.PROTECT)
+    contest = models.ForeignKey(
+        DKContest, related_name="payouts", on_delete=models.PROTECT
+    )
     upper_rank = models.PositiveIntegerField()
     lower_rank = models.PositiveIntegerField()
     payout = models.DecimalField(max_digits=18, decimal_places=2)
 
     class Meta:
-        unique_together = ('contest', 'upper_rank', 'lower_rank')
+        unique_together = ("contest", "upper_rank", "lower_rank")
 
     def __unicode__(self):
-        return ('%s (%s - %s: %s)' %
-                (self.contest, self.upper_rank, self.lower_rank, self.payout))
+        return "%s (%s - %s: %s)" % (
+            self.contest,
+            self.upper_rank,
+            self.lower_rank,
+            self.payout,
+        )
 
 
 class DKResult(models.Model):
-    contest = models.ForeignKey(DKContest, related_name='results', on_delete=models.PROTECT)
+    contest = models.ForeignKey(
+        DKContest, related_name="results", on_delete=models.PROTECT
+    )
     dk_id = models.CharField(max_length=15, unique=True)
     name = models.CharField(max_length=50)
     rank = models.PositiveIntegerField()
     points = models.FloatField()
-    pg = models.ForeignKey(Player, related_name='dk_pg_results', on_delete=models.PROTECT)
-    sg = models.ForeignKey(Player, related_name='dk_sg_results', on_delete=models.PROTECT)
-    sf = models.ForeignKey(Player, related_name='dk_sf_results', on_delete=models.PROTECT)
-    pf = models.ForeignKey(Player, related_name='dk_pf_results', on_delete=models.PROTECT)
-    c = models.ForeignKey(Player, related_name='dk_c_results', on_delete=models.PROTECT)
-    g = models.ForeignKey(Player, related_name='dk_g_results', on_delete=models.PROTECT)
-    f = models.ForeignKey(Player, related_name='dk_f_results', on_delete=models.PROTECT)
-    util = models.ForeignKey(Player, related_name='dk_util_results', on_delete=models.PROTECT)
+    pg = models.ForeignKey(
+        Player, related_name="dk_pg_results", on_delete=models.PROTECT
+    )
+    sg = models.ForeignKey(
+        Player, related_name="dk_sg_results", on_delete=models.PROTECT
+    )
+    sf = models.ForeignKey(
+        Player, related_name="dk_sf_results", on_delete=models.PROTECT
+    )
+    pf = models.ForeignKey(
+        Player, related_name="dk_pf_results", on_delete=models.PROTECT
+    )
+    c = models.ForeignKey(Player, related_name="dk_c_results", on_delete=models.PROTECT)
+    g = models.ForeignKey(Player, related_name="dk_g_results", on_delete=models.PROTECT)
+    f = models.ForeignKey(Player, related_name="dk_f_results", on_delete=models.PROTECT)
+    util = models.ForeignKey(
+        Player, related_name="dk_util_results", on_delete=models.PROTECT
+    )
 
     def get_lineup(self):
-        return [self.pg, self.sg, self.sf, self.pf, self.c, self.g, self.f,
-                self.util]
+        return [self.pg, self.sg, self.sf, self.pf, self.c, self.g, self.f, self.util]
 
     def get_lineup_dict(self):
         return {
-            'PG': self.pg, 'SG': self.sg, 'SF': self.sf, 'PF': self.pf,
-            'C': self.c, 'G': self.g, 'F': self.f, 'UTIL': self.util
+            "PG": self.pg,
+            "SG": self.sg,
+            "SF": self.sf,
+            "PF": self.pf,
+            "C": self.c,
+            "G": self.g,
+            "F": self.f,
+            "UTIL": self.util,
         }
 
     def __unicode__(self):
-        return '%s %s' % (unicode(self.contest), unicode(self.rank))
+        return "%s %s" % (unicode(self.contest), unicode(self.rank))
 
 
 class DKSalary(models.Model):
-    player = models.ForeignKey(Player, related_name='dk_salaries', on_delete=models.PROTECT)
+    player = models.ForeignKey(
+        Player, related_name="dk_salaries", on_delete=models.PROTECT
+    )
     date = models.DateField(null=True, blank=True)
     salary = models.PositiveIntegerField()
 
     class Meta:
-        unique_together = ('player', 'date')
+        unique_together = ("player", "date")
 
     def __unicode__(self):
-        return '%s %s %s' % (self.player, self.date, self.salary)
+        return "%s %s %s" % (self.player, self.date, self.salary)

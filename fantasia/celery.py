@@ -5,15 +5,15 @@ from celery import Celery
 from celery.schedules import crontab
 
 # set the default Django settings module for the 'celery' program.
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'fantasia.settings')
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "fantasia.settings")
 
-app = Celery('fantasia')
+app = Celery("fantasia")
 
 # Using a string here means the worker don't have to serialize
 # the configuration object to child processes.
 # - namespace='CELERY' means all celery-related configuration keys
 #   should have a `CELERY_` prefix.
-app.config_from_object('django.conf:settings', namespace='CELERY')
+app.config_from_object("django.conf:settings", namespace="CELERY")
 
 # Load task modules from all registered Django app configs.
 app.autodiscover_tasks()
@@ -21,29 +21,29 @@ app.autodiscover_tasks()
 
 @app.task(bind=True)
 def debug_task(self):
-    print('Request: {0!r}'.format(self.request))
+    print("Request: {0!r}".format(self.request))
 
 
 # Periodic task schedule
 TASK_SCHEDULE = {
-    'schedule_login': {
-        'task': 'sportsbook.tasks.delayed_login',
-        'schedule': timedelta(minutes=10),
-        'kwargs': { 'site': 'betonline' },
+    "schedule_login": {
+        "task": "sportsbook.tasks.delayed_login",
+        "schedule": timedelta(minutes=10),
+        "kwargs": {"site": "betonline"},
     },
-    'write_moneylines_bookmaker': {
-        'task': 'sportsbook.tasks.write_moneylines',
+    "write_moneylines_bookmaker": {
+        "task": "sportsbook.tasks.write_moneylines",
         # Every 15 seconds between 4PM and 10PM - the task itself handles the
         # 4-10 timeframe
-        'schedule': timedelta(seconds=15),
-        'kwargs': { 'site': 'bookmaker', 'parallel': True },
+        "schedule": timedelta(seconds=15),
+        "kwargs": {"site": "bookmaker", "parallel": True},
     },
-    'write_moneylines_betonline': {
-        'task': 'sportsbook.tasks.write_moneylines',
+    "write_moneylines_betonline": {
+        "task": "sportsbook.tasks.write_moneylines",
         # Every 15 seconds between 4PM and 10PM - the task itself handles the
         # 4-10 timeframe
-        'schedule': timedelta(seconds=15),
-        'kwargs': { 'site': 'betonline', 'parallel': True },
+        "schedule": timedelta(seconds=15),
+        "kwargs": {"site": "betonline", "parallel": True},
     },
 }
 

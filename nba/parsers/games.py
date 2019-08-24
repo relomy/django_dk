@@ -3,8 +3,8 @@ import os
 import requests
 from nba.models import Team, Player, Game, GameStats
 
-def run(season='2015-16'):
 
+def run(season="2015-16"):
     def parse_games(player_id, season):
         """
         Format: {
@@ -64,13 +64,15 @@ def run(season='2015-16'):
             @param heightstr [str]: AWAY @ HOME (e.g. GSW @ PHX)
             @return [tuple]: Height in inches
             """
-            if teamstr and '@' in teamstr:
-                away, home = [Team.objects.get(abbr=team.strip())
-                              for team in teamstr.split('@')]
+            if teamstr and "@" in teamstr:
+                away, home = [
+                    Team.objects.get(abbr=team.strip()) for team in teamstr.split("@")
+                ]
                 return (home, away)
-            elif teamstr and 'vs.' in teamstr:
-                home, away = [Team.objects.get(abbr=team.strip())
-                              for team in teamstr.split('vs.')]
+            elif teamstr and "vs." in teamstr:
+                home, away = [
+                    Team.objects.get(abbr=team.strip()) for team in teamstr.split("vs.")
+                ]
                 return (home, away)
             return (None, None)
 
@@ -79,46 +81,61 @@ def run(season='2015-16'):
             @param d [str]: "MON D, YYYY" (e.g. JAN 1, 2016)
             @return [datetime.date]
             """
-            return datetime.datetime.strptime(d, '%b %d, %Y').date()
+            return datetime.datetime.strptime(d, "%b %d, %Y").date()
 
-        URL = 'http://stats.nba.com/stats/playergamelog'
+        URL = "http://stats.nba.com/stats/playergamelog"
         PARAMS = {
-            'PlayerID': player_id,
-            'LeagueID': '00',
-            'Season': season,
-            'SeasonType': 'Regular Season'
+            "PlayerID": player_id,
+            "LeagueID": "00",
+            "Season": season,
+            "SeasonType": "Regular Season",
         }
-        HEADERS = { 'user-agent': os.environ['USER_AGENT'] }
+        HEADERS = {"user-agent": os.environ["USER_AGENT"]}
 
         response = requests.get(URL, params=PARAMS, headers=HEADERS)
-        for game_data in response.json()['resultSets'][0]['rowSet']:
-            season_id, player_id, game_id, date, matchup, _, minutes, fgm, \
-                fga, _, fg3m, fg3a, _, ftm, fta, _, oreb, dreb, reb, ast, \
-                stl, blk, tov, pf, pts, plus_minus, _ = game_data
+        for game_data in response.json()["resultSets"][0]["rowSet"]:
+            season_id, player_id, game_id, date, matchup, _, minutes, fgm, fga, _, fg3m, fg3a, _, ftm, fta, _, oreb, dreb, reb, ast, stl, blk, tov, pf, pts, plus_minus, _ = (
+                game_data
+            )
             print(f"Updating {player_id} {game_id}")
             home, away = teamstr_to_teams(matchup)
             if home and away:
-                g, _ = Game.objects.update_or_create(nba_id=game_id, defaults={
-                    'home_team': home,
-                    'away_team': away,
-                    'date': datestr_to_date(date),
-                    'season_id': season_id,
-                })
+                g, _ = Game.objects.update_or_create(
+                    nba_id=game_id,
+                    defaults={
+                        "home_team": home,
+                        "away_team": away,
+                        "date": datestr_to_date(date),
+                        "season_id": season_id,
+                    },
+                )
 
                 gs, _ = GameStats.objects.update_or_create(
                     game=g,
                     player=Player.objects.get(nba_id=player_id),
                     defaults={
-                        'min': minutes, 'fgm': fgm, 'fga': fga, 'fg3m': fg3m,
-                        'fg3a': fg3a, 'ftm': ftm, 'fta': fta, 'oreb': oreb,
-                        'dreb': dreb, 'reb': reb, 'ast': ast, 'stl': stl,
-                        'blk': blk, 'tov': tov, 'pf': pf, 'pts': pts,
-                        'plus_minus': plus_minus
-                    }
+                        "min": minutes,
+                        "fgm": fgm,
+                        "fga": fga,
+                        "fg3m": fg3m,
+                        "fg3a": fg3a,
+                        "ftm": ftm,
+                        "fta": fta,
+                        "oreb": oreb,
+                        "dreb": dreb,
+                        "reb": reb,
+                        "ast": ast,
+                        "stl": stl,
+                        "blk": blk,
+                        "tov": tov,
+                        "pf": pf,
+                        "pts": pts,
+                        "plus_minus": plus_minus,
+                    },
                 )
                 print(f"Updated {g}, {gs}")
             else:
-                print(f"Couldn\'t parse game {matchup}") % matchup
+                print(f"Couldn't parse game {matchup}") % matchup
 
     # TODO: Filter for active players
     player_ids = [p.nba_id for p in Player.objects.all()]

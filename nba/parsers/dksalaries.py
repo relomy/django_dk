@@ -249,4 +249,3 @@ def run(writecsv=True):
     if writecsv:
         for date, rows in rows_by_date.iteritems():
             write_csv(rows, date)
-

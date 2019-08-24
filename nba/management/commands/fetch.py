@@ -182,4 +182,3 @@ $ python manage.py fetch
                 dksalaries_parser.dump_csvs()
             if options["dk_new_contests"]:
                 dksalaries_parser.find_new_contests()
-
