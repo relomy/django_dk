@@ -47,7 +47,7 @@ def run(season="2018-19", player_name=None):
             """'[Last], [First]' -> '[First] [Last]'"""
             name_arr = [x.strip() for x in display_name.split(",")]
             last, first = name_arr[0], name_arr[1:]
-            return f"{' '.join(first)} {last}"
+            return "{} {}".format(" ".join(first), last)
 
         URL = "http://stats.nba.com/stats/commonallplayers"
         # 1/25/2016 - NBA.com now requires ordered params

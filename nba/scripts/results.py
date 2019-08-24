@@ -15,11 +15,11 @@ def print_contestant_results():
     # Contests entered | Avg % Rank | # People
     """
 
-    QUERY = """
-SELECT r.name, r.rank, c.dk_id, c.entries
-FROM nba_dkcontest AS c JOIN nba_dkresult AS r ON c.id=r.contest_id
-ORDER BY c.dk_id, r.rank, r.id
-"""
+    QUERY = (
+        "SELECT r.name, r.rank, c.dk_id, c.entries"
+        "FROM nba_dkcontest AS c JOIN nba_dkresult AS r ON c.id=r.contest_id"
+        "ORDER BY c.dk_id, r.rank, r.id"
+    )
 
     contests = set([])
 
@@ -66,11 +66,11 @@ def find_top_contestants():
     # Contests entered | Avg % Rank | # People
     """
 
-    QUERY = """
-SELECT r.name, r.rank, c.dk_id, c.entries
-FROM nba_dkcontest AS c JOIN nba_dkresult AS r ON c.id=r.contest_id
-ORDER BY c.dk_id, r.rank, r.id
-"""
+    QUERY = (
+        "SELECT r.name, r.rank, c.dk_id, c.entries"
+        "FROM nba_dkcontest AS c JOIN nba_dkresult AS r ON c.id=r.contest_id"
+        "ORDER BY c.dk_id, r.rank, r.id"
+    )
 
     contests = set([])
 
@@ -330,12 +330,9 @@ def get_weighted_scores(date=datetime.date.today(), days=7, entry_fee=3.0):
 
     def get_results(contest_id):
         query = (
-            """
-SELECT rank, pg_id, sg_id, sf_id, pf_id, c_id, g_id, f_id, util_id
-FROM nba_dkcontest AS c JOIN nba_dkresult AS r ON c.id=r.contest_id
-WHERE c.dk_id='%s'
-"""
-            % contest_id
+            f"SELECT rank, pg_id, sg_id, sf_id, pf_id, c_id, g_id, f_id, util_id"
+            "FROM nba_dkcontest AS c JOIN nba_dkresult AS r ON c.id=r.contest_id"
+            "WHERE c.dk_id='{contest_id}'"
         )
         cursor = connection.cursor()
         cursor.execute(query)

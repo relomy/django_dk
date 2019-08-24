@@ -11,10 +11,7 @@ class Command(BaseCommand):
 
     CURR_SEASON = "2018-19"
 
-    help = """
-Fetches player data from NBA.com. Usage:
-$ python manage.py fetch
-"""
+    help = "Fetches player data from NBA.com. Usage:\n$ python manage.py fetch"
 
     def add_arguments(self, parser):
         parser.add_argument(
